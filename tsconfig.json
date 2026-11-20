@@ -1,0 +1,55 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "module": "ESNext",
+    "types": ["vite/client"],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "allowJs": true,
+    "jsx": "react-jsx",
+    "paths": {
+      "@/*": [
+        "./*"
+      ],
+      "@3c/shared-types": [
+        "./packages/shared-types/src/index.ts"
+      ],
+      "@3c/contracts": [
+        "./packages/contracts/src/index.ts"
+      ],
+      "@3c/permissions": [
+        "./packages/permissions/src/index.ts"
+      ],
+      "@3c/commerce-engine": [
+        "./packages/commerce-engine/src/index.ts"
+      ],
+      "@3c/design-system": [
+        "./packages/design-system/src/index.ts"
+      ],
+      "@3c/platform-adapters": [
+        "./packages/platform-adapters/src/index.ts"
+      ],
+      "@3c/api-client": [
+        "./packages/api-client/src/index.ts"
+      ],
+      "@3c/sync-engine": [
+        "./packages/sync-engine/src/index.ts"
+      ],
+      "@3c/sync-engine/storage": [
+        "./packages/sync-engine/src/storage.ts"
+      ]
+    },
+    "allowImportingTsExtensions": true,
+    "noEmit": true
+  },
+  "exclude": ["dist", "apps/*/dist", "node_modules", ".sentinel"]
+}

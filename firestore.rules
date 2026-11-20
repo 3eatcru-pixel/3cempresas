@@ -1,0 +1,261 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model (synced with firebase-blueprint.json)
+    // ===============================================================
+    //
+    // Collection: /users/{userId}
+    // Document ID: Firebase Auth UID (1..128 safe chars)
+    // Fields:
+    //   - uid: string (required, immutable, == userId)
+    //   - email: string (required, immutable, == request.auth.token.email, <= 254)
+    //   - displayName: string (required, 1..120 chars)
+    //   - photoUrl: string (optional, https URL <= 500 chars)
+    //   - productScope: string (required, enum: marketplace|store-os|driver|waiter|hq|server-core)
+    //   - createdAt: timestamp (required, immutable, == request.time on create)
+    //   - updatedAt: timestamp (required, == request.time)
+    //
+    // Collection: /admins/{adminId}
+    // Document ID: Firebase Auth UID
+    // Fields:
+    //   - uid: string (required, immutable, == adminId)
+    //   - email: string (required, <= 254)
+    //   - grantedBy: string (required, == request.auth.uid on create)
+    //   - createdAt: timestamp (required, immutable, == request.time on create)
+    //
+    // Collection: /cloud_preferences/{userId}
+    // Document ID: Firebase Auth UID
+    // Fields:
+    //   - uid: string (required, immutable, == userId)
+    //   - productScope: string (required, enum: marketplace|store-os|driver|waiter|hq|server-core)
+    //   - locale: string (required, 2..16 chars)
+    //   - theme: string (required, enum: dark|light|system)
+    //   - notificationsEnabled: bool (required)
+    //   - updatedAt: timestamp (required, == request.time)
+    //
+    // ===============================================================
+
+    // Global default-deny catch-all (Pillar 1)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // ---------------------------------------------------------------
+    // Helper Functions
+    // ---------------------------------------------------------------
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string
+        && id.size() >= 1
+        && id.size() <= 128
+        && id.matches('^[A-Za-z0-9_.-]+$')
+        && !id.matches('^\\.*$');
+    }
+
+    function isOwner(userId) {
+      return isVerified() && isValidId(userId) && request.auth.uid == userId;
+    }
+
+    function isBootstrappedHqOwner() {
+      return isVerified()
+        && request.auth.token.email == '3eatcru@gmail.com';
+    }
+
+    function isAdmin() {
+      return isVerified() && (
+        isBootstrappedHqOwner()
+        || exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidEmail(email) {
+      return email is string
+        && email.size() >= 5
+        && email.size() <= 254
+        && email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$');
+    }
+
+    function isValidOptionalHttpsUrl(data, field) {
+      return !(field in data)
+        || (
+          data[field] is string
+          && (
+            data[field] == ''
+            || (data[field].size() <= 500 && data[field].matches('^https://.*'))
+          )
+        );
+    }
+
+    function isValidProductScope(scope) {
+      return scope is string
+        && scope in ['marketplace', 'store-os', 'driver', 'waiter', 'hq', 'server-core'];
+    }
+
+    function isValidTheme(theme) {
+      return theme is string && theme in ['dark', 'light', 'system'];
+    }
+
+    // ---------------------------------------------------------------
+    // Domain Validators (synced with firebase-blueprint.json)
+    // ---------------------------------------------------------------
+
+    function isValidUserProfileCreate(data, userId) {
+      return data.keys().hasOnly([
+          'uid',
+          'email',
+          'displayName',
+          'photoUrl',
+          'productScope',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasAll([
+          'uid',
+          'email',
+          'displayName',
+          'productScope',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.uid is string
+        && data.uid == userId
+        && data.uid == request.auth.uid
+        && isValidEmail(data.email)
+        && data.email == request.auth.token.email
+        && data.displayName is string
+        && data.displayName.size() >= 1
+        && data.displayName.size() <= 120
+        && isValidOptionalHttpsUrl(data, 'photoUrl')
+        && isValidProductScope(data.productScope)
+        && data.createdAt == request.time
+        && data.updatedAt == request.time;
+    }
+
+    function isValidUserProfileUpdate(data, prev) {
+      return data.keys().hasOnly([
+          'uid',
+          'email',
+          'displayName',
+          'photoUrl',
+          'productScope',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.keys().hasAll([
+          'uid',
+          'email',
+          'displayName',
+          'productScope',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.diff(prev).affectedKeys().hasOnly([
+          'displayName',
+          'photoUrl',
+          'productScope',
+          'updatedAt'
+        ])
+        && data.uid == prev.uid
+        && data.email == prev.email
+        && data.createdAt == prev.createdAt
+        && data.displayName is string
+        && data.displayName.size() >= 1
+        && data.displayName.size() <= 120
+        && isValidOptionalHttpsUrl(data, 'photoUrl')
+        && isValidProductScope(data.productScope)
+        && data.updatedAt == request.time;
+    }
+
+    function isValidAdminRecordCreate(data, adminId) {
+      return data.keys().hasOnly(['uid', 'email', 'grantedBy', 'createdAt'])
+        && data.keys().hasAll(['uid', 'email', 'grantedBy', 'createdAt'])
+        && isValidId(adminId)
+        && data.uid is string
+        && data.uid == adminId
+        && isValidEmail(data.email)
+        && data.grantedBy is string
+        && data.grantedBy == request.auth.uid
+        && data.createdAt == request.time;
+    }
+
+    function isValidCloudPreference(data, userId) {
+      return data.keys().hasOnly([
+          'uid',
+          'productScope',
+          'locale',
+          'theme',
+          'notificationsEnabled',
+          'updatedAt'
+        ])
+        && data.keys().hasAll([
+          'uid',
+          'productScope',
+          'locale',
+          'theme',
+          'notificationsEnabled',
+          'updatedAt'
+        ])
+        && data.uid is string
+        && data.uid == userId
+        && data.uid == request.auth.uid
+        && isValidProductScope(data.productScope)
+        && data.locale is string
+        && data.locale.size() >= 2
+        && data.locale.size() <= 16
+        && isValidTheme(data.theme)
+        && data.notificationsEnabled is bool
+        && data.updatedAt == request.time;
+    }
+
+    // ---------------------------------------------------------------
+    // Collection Rules
+    // ---------------------------------------------------------------
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      allow create: if isOwner(userId)
+        && isValidUserProfileCreate(request.resource.data, userId);
+      allow update: if isOwner(userId)
+        && isValidUserProfileUpdate(request.resource.data, resource.data);
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    match /admins/{adminId} {
+      allow get, list: if isAdmin();
+      allow create: if isAdmin()
+        && isValidAdminRecordCreate(request.resource.data, adminId);
+      allow update: if false;
+      allow delete: if isAdmin() && adminId != request.auth.uid;
+    }
+
+    match /cloud_preferences/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if false;
+      allow create: if isOwner(userId)
+        && isValidCloudPreference(request.resource.data, userId);
+      allow update: if isOwner(userId)
+        && isValidCloudPreference(request.resource.data, userId)
+        && request.resource.data.uid == resource.data.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'productScope',
+          'locale',
+          'theme',
+          'notificationsEnabled',
+          'updatedAt'
+        ]);
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+  }
+}

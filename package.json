@@ -1,0 +1,69 @@
+{
+  "name": "3c-corp-monorepo",
+  "private": true,
+  "version": "5.2.1",
+  "packageManager": "npm@10.9.2",
+  "engines": {
+    "node": ">=22.23.0 <25.0.0"
+  },
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "servers/*"
+  ],
+  "scripts": {
+    "dev": "tsx server.ts",
+    "build": "vite build",
+    "build:apps": "npm --workspace=@3c/hq-web run build && npm --workspace=@3c/store-web run build && npm --workspace=@3c/marketplace-web run build && npm --workspace=@3c/driver-web run build && npm --workspace=@3c/waiter-web run build",
+    "build:all": "npm run build && npm run build:apps",
+    "start": "tsx server.ts",
+    "preview": "vite preview",
+    "clean": "node -e \"const fs = require('fs'); ['dist', 'server.js', '.sentinel', 'apps/hq-web/dist', 'apps/store-web/dist', 'apps/marketplace-web/dist', 'apps/driver-web/dist', 'apps/waiter-web/dist'].forEach(p => { try { fs.rmSync(p, { recursive: true, force: true }); } catch {} })\"",
+    "lint": "tsc --noEmit",
+    "lint:rules": "eslint firestore.rules",
+    "test": "tsx scripts/run-audit-tests.ts",
+    "test:security": "tsx tests/security/hq-central.test.ts && tsx tests/security/server-core.test.ts && tsx tests/security/store-os.test.ts && tsx tests/security/marketplace.test.ts && tsx tests/security/phase1-security.test.ts && tsx tests/security/audit-remediation.test.ts && tsx tests/security/cloud-hub-readiness.test.ts && tsx tests/security/driver-dual-fleet.test.ts && tsx tests/security/postgres-rls-concurrency.test.ts && tsx tests/security/production-readiness.test.ts && tsx tests/security/firebase-optional-connector.test.ts && tsx tests/security/marketplace-governance-and-growth.test.ts && tsx tests/security/user-experience-and-isolation.test.ts",
+    "test:e2e": "tsx scripts/test-ecosystem-interaction.ts",
+    "test:cross-platform": "tsx tests/cross-platform/edge-wan-reconcile.test.ts && tsx tests/cross-platform/global-homologation.test.ts && tsx tests/cross-platform/offline-maps-vector.test.ts",
+    "test:sentinel-heavy": "tsx tests/sentinel/heavy-stress-and-security.test.ts",
+    "test:phase3": "tsx scripts/test-phase3-sync.ts",
+    "test:all": "npm run lint && npm run lint:rules && npm run test && npm run test:security && npm run test:cross-platform && npm run test:sentinel-heavy && npm run test:phase3 && npm run test:e2e && npm run sentinel:quick",
+    "audit": "npm run test:all",
+    "sentinel": "tsx scripts/sentinel.ts",
+    "sentinel:quick": "tsx scripts/sentinel.ts --quick"
+  },
+  "dependencies": {
+    "@google/genai": "^3.1.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/leaflet": "^1.9.22",
+    "@types/pg": "^8.23.1",
+    "@types/qrcode": "^1.5.6",
+    "@vitejs/plugin-react": "^6.1.1",
+    "dotenv": "^17.2.3",
+    "eslint": "^10.14.0",
+    "express": "^4.21.2",
+    "firebase": "^13.4.0",
+    "idb": "^8.0.4",
+    "leaflet": "^1.9.4",
+    "lucide-react": "^0.546.0",
+    "maplibre-gl": "^6.19.0",
+    "pg": "^8.23.1",
+    "pmtiles": "^4.5.0",
+    "qrcode": "^1.5.4",
+    "react": "^19.0.1",
+    "react-dom": "^19.0.1",
+    "react-leaflet": "^5.0.0",
+    "tsx": "^4.21.0",
+    "vite": "^8.3.0"
+  },
+  "devDependencies": {
+    "@firebase/eslint-plugin-security-rules": "^0.0.2",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.14.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2"
+  }
+}

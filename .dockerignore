@@ -1,0 +1,13 @@
+node_modules
+dist
+.git
+.sentinel
+server-db.json
+server-db.json.tmp
+.server-secret
+*.log
+.env
+.env.local
+apps/*/android
+apps/*/dist
+apps/store-desktop/src-tauri/target

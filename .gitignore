@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs & caches
+build/
+dist/
+**/dist/
+coverage/
+.turbo/
+*.tsbuildinfo
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.local
+.vscode/
+.antigravity/
+.aistudio/
+.idea/
+
+# Environment & Secrets (CRITICAL: Never commit secrets)
+.env*
+!.env.example
+.server-secret
+
+# Databases & Local State (CRITICAL: Never commit local data)
+server-db.json
+server-db.json.tmp
+*.ops.ndjson
+data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.db
+*.db-shm
+*.db-wal
+
+# Sentinel audit reports & temporary run cache
+.sentinel/
+
+# Desktop (Tauri) & Mobile (Android/Capacitor) build artifacts
+apps/store-desktop/src-tauri/binaries/3c-edge-node-*
+apps/store-desktop/src-tauri/target/
+apps/*/android/.gradle/
+apps/*/android/app/build/
+apps/*/android/build/
+

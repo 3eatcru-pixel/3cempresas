@@ -1,0 +1,134 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Perfil privado opcional sincronizado via Firebase Auth (Google) vinculado à conta do ecossistema 3C Corp.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID do usuário autenticado",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "E-mail verificado pelo provedor Google",
+          "maxLength": 254
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Nome de exibição do usuário",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "photoUrl": {
+          "type": "string",
+          "description": "URL HTTPS opcional do avatar Google",
+          "maxLength": 500
+        },
+        "productScope": {
+          "type": "string",
+          "enum": ["marketplace", "store-os", "driver", "waiter", "hq", "server-core"],
+          "description": "Produto de origem da autenticação separada"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp de servidor na criação do perfil"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp de servidor da última atualização"
+        }
+      },
+      "required": ["uid", "email", "displayName", "productScope", "createdAt", "updatedAt"]
+    },
+    "AdminRecord": {
+      "title": "AdminRecord",
+      "description": "Registro de administradores HQ autorizados no Firestore (somente governança).",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase UID do administrador",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "E-mail corporativo verificado",
+          "maxLength": 254
+        },
+        "grantedBy": {
+          "type": "string",
+          "description": "UID do administrador concedente",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp de concessão"
+        }
+      },
+      "required": ["uid", "email", "grantedBy", "createdAt"]
+    },
+    "CloudPreference": {
+      "title": "CloudPreference",
+      "description": "Preferências opcionais multi-dispositivo do usuário quando o conector Firebase está ligado no HQ.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase UID proprietário",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "productScope": {
+          "type": "string",
+          "enum": ["marketplace", "store-os", "driver", "waiter", "hq", "server-core"],
+          "description": "Escopo do produto"
+        },
+        "locale": {
+          "type": "string",
+          "description": "Código de idioma/localidade",
+          "minLength": 2,
+          "maxLength": 16
+        },
+        "theme": {
+          "type": "string",
+          "enum": ["dark", "light", "system"],
+          "description": "Preferência de tema"
+        },
+        "notificationsEnabled": {
+          "type": "boolean",
+          "description": "Se notificações opcionais estão ativas"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp de servidor da atualização"
+        }
+      },
+      "required": ["uid", "productScope", "locale", "theme", "notificationsEnabled", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Perfis privados de usuários autenticados via Google (leitura/escrita restrita ao próprio dono ou admin HQ)."
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminRecord" },
+      "description": "Lista de administradores HQ autorizados no Firestore."
+    },
+    "/cloud_preferences/{userId}": {
+      "schema": { "$ref": "#/entities/CloudPreference" },
+      "description": "Preferências opcionais sincronizadas na nuvem por usuário."
+    }
+  }
+}
