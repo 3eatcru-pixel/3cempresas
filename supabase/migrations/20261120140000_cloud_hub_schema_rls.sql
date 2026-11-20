@@ -154,6 +154,8 @@ CREATE INDEX IF NOT EXISTS idx_audit_trail_tenant_event_created
 -- =============================================================================
 -- MULTI-TENANT ROW-LEVEL SECURITY (RLS)
 -- =============================================================================
+ALTER TABLE public.tenants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tenants FORCE ROW LEVEL SECURITY;
 ALTER TABLE public.store_documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.store_documents FORCE ROW LEVEL SECURITY;
 ALTER TABLE public.sync_outbox_cloud ENABLE ROW LEVEL SECURITY;
@@ -173,6 +175,23 @@ DECLARE
   has_supabase_auth BOOLEAN;
 BEGIN
   SELECT EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = 'auth') INTO has_supabase_auth;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'tenants' AND policyname = 'tenant_isolation_tenants'
+  ) THEN
+    CREATE POLICY tenant_isolation_tenants ON public.tenants
+      USING (current_setting('app.bypass_rls', true) = 'true' OR id = NULLIF(current_setting('app.tenant_id', true), ''))
+      WITH CHECK (current_setting('app.bypass_rls', true) = 'true' OR id = NULLIF(current_setting('app.tenant_id', true), ''));
+  END IF;
+
+  IF has_supabase_auth AND NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'tenants' AND policyname = 'supabase_jwt_isolation_tenants'
+  ) THEN
+    CREATE POLICY supabase_jwt_isolation_tenants ON public.tenants
+      TO authenticated, service_role
+      USING (auth.role() = 'service_role' OR id = NULLIF(COALESCE(auth.jwt() ->> 'tenant_id', auth.jwt() -> 'app_metadata' ->> 'tenant_id'), ''))
+      WITH CHECK (auth.role() = 'service_role' OR id = NULLIF(COALESCE(auth.jwt() ->> 'tenant_id', auth.jwt() -> 'app_metadata' ->> 'tenant_id'), ''));
+  END IF;
 
   FOREACH tbl IN ARRAY ARRAY['store_documents', 'sync_outbox_cloud', 'stock_ledger', 'edge_nodes', 'audit_trail']
   LOOP
