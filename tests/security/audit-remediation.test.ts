@@ -1428,6 +1428,114 @@ async function run() {
       'P2-15. Pareamento bloqueia loja suspensa/deletada (Cloud & Edge), Edge /confirm-payment grava trilha MANUAL_OPERATOR, filtro _deleted em usuários e IPC Tauri restrito à LAN/dispositivo',
       `cloudWaiter=${cloudWaiterSuspGet.status}/${cloudWaiterSuspRegen.status}/${cloudWaiterDelGet.status}, edgeConfirm=${edgeConfirmRes.status}/${edgeConfirmJson?.paymentConfirmationType}, edgeWaiter=${edgeWaiterSuspRes.status}, tauri=${tauriHardened}`
     );
+
+    // 16. P2-16: Upgraded idempotencyGuard (/api/v1/store replay + GET bypass + concurrent 409 in-flight lock) & modularized route parity
+    const tblIdemKey = 'idem-store-tbl-rem-521';
+    const tblFirstRes = await fetch(`${baseUrl}/api/v1/store/tables`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${tokMgrA1}`,
+        'Idempotency-Key': tblIdemKey,
+      },
+      body: JSON.stringify({ storeId: 's-a1', tableNumber: 77, capacity: 4 }),
+    });
+    const tblFirstJson: any = await tblFirstRes.json();
+
+    const tblReplayRes = await fetch(`${baseUrl}/api/v1/store/tables`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${tokMgrA1}`,
+        'Idempotency-Key': tblIdemKey,
+      },
+      body: JSON.stringify({ storeId: 's-a1', tableNumber: 77, capacity: 4 }),
+    });
+    const tblReplayJson: any = await tblReplayRes.json();
+    const tblReplayHeader = tblReplayRes.headers.get('x-3c-idempotent-replay');
+
+    const getWithIdemHeaderRes = await fetch(`${baseUrl}/api/v1/store/tables?storeId=s-a1`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${tokMgrA1}`,
+        'Idempotency-Key': 'get-must-never-cache-1',
+      },
+    });
+    const getWithIdemReplay = getWithIdemHeaderRes.headers.get('x-3c-idempotent-replay');
+
+    const allTablesNow = (await db.collection('tables').get()).docs
+      .map((d) => d.data())
+      .filter((t) => t && !t._deleted && t.storeId === 's-a1' && Number(t.tableNumber) === 77);
+
+    // Concurrent in-flight 409 verification using idempotencyGuard on deterministic slow handler
+    const { default: express } = await import('express');
+    const { idempotencyGuard } = await import('../../src/server/middleware/contracts.ts');
+    const raceApp = express();
+    raceApp.use(express.json());
+    raceApp.post('/slow', idempotencyGuard, async (_req, res) => {
+      await new Promise((r) => setTimeout(r, 70));
+      res.status(201).json({ ok: true, seq: Date.now() });
+    });
+    const raceSrv = http.createServer(raceApp);
+    await new Promise<void>((resolve) => raceSrv.listen(0, '127.0.0.1', () => resolve()));
+    const raceUrl = `http://127.0.0.1:${(raceSrv.address() as any).port}/slow`;
+    let raceStatuses: number[] = [];
+    let raceBodies: any[] = [];
+    try {
+      const raceRes = await Promise.all([
+        fetch(raceUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Idempotency-Key': 'race-lock-key-1' },
+          body: JSON.stringify({ op: 1 }),
+        }),
+        fetch(raceUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Idempotency-Key': 'race-lock-key-1' },
+          body: JSON.stringify({ op: 1 }),
+        }),
+      ]);
+      raceStatuses = raceRes.map((r) => r.status).sort((a, b) => a - b);
+      raceBodies = await Promise.all(raceRes.map((r) => r.json()));
+    } finally {
+      (raceSrv as any).closeAllConnections?.();
+      await new Promise<void>((resolve) => raceSrv.close(() => resolve()));
+    }
+
+    // Modularized driver-pairing parity check post-split
+    const drvPairGet = await fetch(`${baseUrl}/api/v1/store/s-a1/driver-pairing`, {
+      headers: { Authorization: `Bearer ${tokMgrA1}` },
+    });
+    const drvPairGetJson: any = await drvPairGet.json();
+    const drvPairLoginRes = await fetch(`${baseUrl}/api/v1/store/driver-pairing/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        storeId: 's-a1',
+        pin: drvPairGetJson?.pin,
+        driverName: 'Entregador Modular',
+        vehicle: 'BIKE',
+      }),
+    });
+    const drvPairLoginJson: any = await drvPairLoginRes.json();
+
+    check(
+      (tblFirstRes.status === 200 || tblFirstRes.status === 201) &&
+        tblReplayRes.status === tblFirstRes.status &&
+        tblReplayHeader === 'true' &&
+        tblReplayJson?.deduplicated === true &&
+        allTablesNow.length === 1 &&
+        Boolean(tblFirstJson?.table?.id) &&
+        getWithIdemHeaderRes.status === 200 &&
+        getWithIdemReplay === null &&
+        raceStatuses[0] === 201 &&
+        raceStatuses[1] === 409 &&
+        raceBodies.some((b) => b?.inFlight === true) &&
+        drvPairGet.status === 200 &&
+        drvPairLoginRes.status === 200 &&
+        Boolean(drvPairLoginJson?.token),
+      'P2-16. Idempotência endurecida (/api/v1/store replay, bypass GET e trava concorrente 409 inFlight) + paridade das rotas modularizadas (driver-pairing)',
+      `tbl1=${tblFirstRes.status}, tblReplay=${tblReplayRes.status}/${tblReplayHeader}/${tblReplayJson?.deduplicated}, count77=${allTablesNow.length}, getReplay=${getWithIdemReplay}, race=${raceStatuses.join(',')}, drvPair=${drvPairGet.status}/${drvPairLoginRes.status}`
+    );
   } finally {
     if (edgeA) await edgeA.close().catch(() => {});
     (server as any).closeAllConnections?.();

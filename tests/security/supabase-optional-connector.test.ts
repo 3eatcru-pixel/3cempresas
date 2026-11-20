@@ -166,7 +166,10 @@ async function main() {
     assert.strictEqual(standbyHealthRes.status, 200);
     const standbyJson = await standbyHealthRes.json();
     assert.strictEqual(standbyJson.standbyByHq, true);
-    pass('Kill-switch 1-clique HQ bloqueia /supabase-exchange (403) e coloca /supabase/health em STANDBY');
+    assert.strictEqual(standbyJson.migrationsReady, true);
+    assert.ok(standbyJson.migrationsCount >= 1);
+    assert.ok(String(standbyJson.latestMigration || '').endsWith('.sql'));
+    pass('Kill-switch 1-clique HQ bloqueia /supabase-exchange (403) e coloca /supabase/health em STANDBY (com migrations SQL detectadas)');
 
     // 9. Unauthorized public/consumer access to /supabase/health must be rejected
     const unauthHealthRes = await fetch(`${baseUrl}/supabase/health`);

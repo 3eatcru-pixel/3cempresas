@@ -30,6 +30,9 @@ export const HqSupabaseServicesGrid: React.FC<HqSupabaseServicesGridProps> = ({
     latencyMs: number;
     detail: string;
     source: string;
+    migrationsReady?: boolean;
+    migrationsCount?: number;
+    latestMigration?: string | null;
   } | null>(null);
 
   const authEnabled = supabaseEnabled && governance?.featureFlags?.supabaseAuthEnabled !== false;
@@ -47,6 +50,9 @@ export const HqSupabaseServicesGrid: React.FC<HqSupabaseServicesGridProps> = ({
         latencyMs: res.latencyMs,
         detail: res.detail,
         source: res.source,
+        migrationsReady: res.migrationsReady,
+        migrationsCount: res.migrationsCount,
+        latestMigration: res.latestMigration,
       });
     } catch (err: any) {
       setServerProbe({
@@ -202,7 +208,9 @@ export const HqSupabaseServicesGrid: React.FC<HqSupabaseServicesGridProps> = ({
         >
           <span>{serverProbe.detail}</span>
           <span className="font-mono text-[11px] shrink-0">
-            JWKS: {serverProbe.jwksReachable ? 'OK' : 'N/D'} · Secret: {serverProbe.hasSecretKey ? 'ON' : 'OFF'} ·{' '}
+            JWKS: {serverProbe.jwksReachable ? 'OK' : 'N/D'} · Secret:{' '}
+            {serverProbe.hasSecretKey ? 'ON' : 'OFF'} · SQL Migrations:{' '}
+            {serverProbe.migrationsReady ? `${serverProbe.migrationsCount} OK` : '0'} ·{' '}
             {serverProbe.latencyMs}ms
           </span>
         </div>

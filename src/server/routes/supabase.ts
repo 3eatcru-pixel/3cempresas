@@ -1,4 +1,6 @@
 import express from 'express';
+import fs from 'fs';
+import path from 'path';
 import { db, runWithSystemDbContext } from '../config.ts';
 import { requireRoles, verifyAutonomousToken } from '../middleware/auth.ts';
 import {
@@ -8,6 +10,30 @@ import {
 } from '../services/supabaseProvider.ts';
 
 const router = express.Router();
+
+function readLocalMigrationsMeta(): {
+  migrationsReady: boolean;
+  migrationsCount: number;
+  latestMigration: string | null;
+} {
+  try {
+    const migrationsDir = path.join(process.cwd(), 'supabase', 'migrations');
+    if (!fs.existsSync(migrationsDir)) {
+      return { migrationsReady: false, migrationsCount: 0, latestMigration: null };
+    }
+    const files = fs
+      .readdirSync(migrationsDir)
+      .filter((f) => f.endsWith('.sql'))
+      .sort();
+    return {
+      migrationsReady: files.length > 0,
+      migrationsCount: files.length,
+      latestMigration: files.length > 0 ? files[files.length - 1] : null,
+    };
+  } catch {
+    return { migrationsReady: false, migrationsCount: 0, latestMigration: null };
+  }
+}
 
 router.get(
   '/health',
@@ -23,6 +49,7 @@ router.get(
       const masterEnabled = flags.supabaseEnabled !== false;
       const authEnabled = masterEnabled && flags.supabaseAuthEnabled !== false;
       const dbEnabled = masterEnabled && flags.supabaseDbEnabled !== false;
+      const migrationsMeta = readLocalMigrationsMeta();
 
       if (!masterEnabled) {
         const runtime = resolveSupabaseServerRuntime(govData);
@@ -41,6 +68,7 @@ router.get(
           latencyMs: 0,
           source: runtime.source,
           detail: 'Conector Supabase em modo STANDBY pelo HQ Central.',
+          ...migrationsMeta,
         });
       }
 
@@ -51,6 +79,7 @@ router.get(
         masterEnabled,
         authEnabled,
         dbEnabled,
+        ...migrationsMeta,
       });
     } catch {
       return res.status(500).json({ error: 'Falha ao consultar saúde do conector Supabase.' });

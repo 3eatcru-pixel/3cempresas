@@ -163,6 +163,9 @@ export const systemApi = {
       latencyMs: number;
       source: string;
       detail: string;
+      migrationsReady?: boolean;
+      migrationsCount?: number;
+      latestMigration?: string | null;
     }>('/supabase/health', {
       method: 'GET',
       token,
