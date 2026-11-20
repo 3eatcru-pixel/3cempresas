@@ -15,6 +15,8 @@ const ORDER_STATUS_META: Record<string, { label: string; colorClass: string }> =
   CONFIRMED: { label: 'Confirmado', colorClass: 'text-sky-400' },
   IN_PREPARATION: { label: 'Em Preparo', colorClass: 'text-amber-300' },
   READY: { label: 'Pronto', colorClass: 'text-cyan-400' },
+  READY_FOR_PICKUP: { label: 'Pronto p/ Retirada', colorClass: 'text-cyan-400' },
+  DRIVER_ASSIGNED: { label: 'Entregador Atribuído', colorClass: 'text-blue-400' },
   OUT_FOR_DELIVERY: { label: 'Em Entrega', colorClass: 'text-indigo-400' },
   DELIVERED: { label: 'Concluído', colorClass: 'text-emerald-400' },
   CANCELLED: { label: 'Cancelado', colorClass: 'text-rose-400' },
@@ -28,6 +30,7 @@ const PAYMENT_SHORT_LABEL: Record<string, string> = {
   BOLETO: 'Boleto',
   BANK_TRANSFER: 'Transferência',
   PAYMENT_LINK: 'Link',
+  TABLE_BILL: 'Comanda Mesa',
 };
 
 const CHANNEL_SHORT_LABEL: Record<string, string> = {
@@ -35,7 +38,9 @@ const CHANNEL_SHORT_LABEL: Record<string, string> = {
   POS: 'PDV',
   KIOSK: 'Totem',
   WAITER: 'Garçom',
+  WAITER_TABLE: 'Salão / Garçom',
   TABLE: 'Mesa',
+  PICKUP: 'Retirada',
 };
 
 export const MerchantOrdersStream: React.FC<MerchantOrdersStreamProps> = ({

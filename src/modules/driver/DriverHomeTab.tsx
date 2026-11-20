@@ -15,6 +15,7 @@ interface DriverHomeTabProps {
   onOpenModeModal: () => void;
   onOpenQrPairing?: () => void;
   onNavigateToOrders: () => void;
+  onNavigateToMap?: () => void;
   completedOrders: Order[];
   totalAvailableCount: number;
   totalActiveCount: number;
@@ -33,6 +34,7 @@ export const DriverHomeTab: React.FC<DriverHomeTabProps> = ({
   onOpenModeModal,
   onOpenQrPairing,
   onNavigateToOrders,
+  onNavigateToMap,
   completedOrders,
   totalAvailableCount,
   totalActiveCount,
@@ -87,10 +89,14 @@ export const DriverHomeTab: React.FC<DriverHomeTabProps> = ({
       {/* Primary Action CTA */}
       <button
         type="button"
-        onClick={onNavigateToOrders}
+        onClick={totalActiveCount > 0 && onNavigateToMap ? onNavigateToMap : onNavigateToOrders}
         className="w-full h-12 bg-[#00CCBC] hover:bg-[#00b5a7] text-slate-950 font-black text-sm rounded-2xl shadow-lg flex items-center justify-center gap-2 transition-all cursor-pointer tabular-nums"
       >
-        <span>Ver pedidos disponíveis ({totalAvailableCount})</span>
+        <span>
+          {totalActiveCount > 0
+            ? `Continuar entrega em rota (${totalActiveCount})`
+            : `Ver pedidos disponíveis (${totalAvailableCount})`}
+        </span>
         <ArrowRight className="w-5 h-5" />
       </button>
 

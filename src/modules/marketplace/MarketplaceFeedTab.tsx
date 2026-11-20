@@ -1,4 +1,5 @@
 import React from 'react';
+import { Clock, ChevronRight } from 'lucide-react';
 import { Store } from '../../types';
 import { MarketplaceSortOption } from './hooks/useMarketplaceLogic';
 
@@ -66,6 +67,8 @@ export const MarketplaceFeedTab: React.FC<MarketplaceFeedTabProps> = ({
   onSmartSearch,
   aiDiscoveryLoading,
   aiDiscoveryResponse,
+  activeOrders,
+  onTrackOrder,
   onRequestGeolocation,
   onGeocodeAddress,
   isGeocodingAddress,
@@ -98,7 +101,34 @@ export const MarketplaceFeedTab: React.FC<MarketplaceFeedTabProps> = ({
 
   return (
     <div className="space-y-6 animate-fadeIn pb-12">
-      
+      {Array.isArray(activeOrders) && activeOrders.length > 0 && (
+        <div className="bg-gradient-to-r from-amber-500/15 via-slate-900 to-slate-900 border border-amber-500/35 rounded-2xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0">
+              <Clock className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs font-black text-white uppercase tracking-wider truncate">
+                {activeOrders.length === 1
+                  ? `Pedido ${activeOrders[0]?.code || ''} em andamento`
+                  : `${activeOrders.length} pedidos em andamento`}
+              </div>
+              <p className="text-[11px] text-slate-300 truncate">
+                {activeOrders[0]?.storeName || 'Estabelecimento'} • Toque para acompanhar status, rota GPS ou PIN de entrega.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => onTrackOrder(activeOrders[0].id)}
+            className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 shrink-0 transition-all cursor-pointer"
+          >
+            <span>Acompanhar</span>
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       <MarketplaceFeedControls
         geoAddress={geoAddress}
         setGeoAddress={setGeoAddress}

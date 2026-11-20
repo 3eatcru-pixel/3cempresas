@@ -73,6 +73,7 @@ export const MarketplaceStoreShowcaseView: React.FC<MarketplaceStoreShowcaseView
   const [segmentFilter, setSegmentFilter] = useState<'ALL' | 'FOOD' | 'RETAIL' | 'SERVICE'>('ALL');
   const [showcaseSearch, setShowcaseSearch] = useState<string>('');
   const [showcaseSort, setShowcaseSort] = useState<'DEFAULT' | 'PRICE_ASC' | 'PRICE_DESC' | 'NAME'>('DEFAULT');
+  const [availableOnly, setAvailableOnly] = useState<boolean>(false);
   const [isLightMode, setIsLightMode] = useState<boolean>(false);
   const [selectedServiceItem, setSelectedServiceItem] = useState<MenuItem | null>(null);
 
@@ -93,6 +94,7 @@ export const MarketplaceStoreShowcaseView: React.FC<MarketplaceStoreShowcaseView
     setSegmentFilter('ALL');
     setShowcaseSearch('');
     setShowcaseSort('DEFAULT');
+    setAvailableOnly(false);
     setSelectedServiceItem(null);
   }, [store.id]);
 
@@ -120,6 +122,9 @@ export const MarketplaceStoreShowcaseView: React.FC<MarketplaceStoreShowcaseView
   const searchLower = showcaseSearch.trim().toLowerCase();
   const displayedItems = baseDisplayedItems
     .filter((item) => {
+      if (availableOnly && (item.stock <= 0 || item.isAvailable === false)) {
+        return false;
+      }
       if (!searchLower) return true;
       return (
         item.name.toLowerCase().includes(searchLower) ||
@@ -279,6 +284,8 @@ export const MarketplaceStoreShowcaseView: React.FC<MarketplaceStoreShowcaseView
             setShowcaseSearch={setShowcaseSearch}
             showcaseSort={showcaseSort}
             setShowcaseSort={setShowcaseSort}
+            availableOnly={availableOnly}
+            setAvailableOnly={setAvailableOnly}
             selectedCategory={selectedCategory}
             setSelectedCategory={setSelectedCategory}
             isLightMode={isLightMode}

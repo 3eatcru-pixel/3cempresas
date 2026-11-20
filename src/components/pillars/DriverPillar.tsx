@@ -231,6 +231,7 @@ export const DriverPillar: React.FC = () => {
             onOpenModeModal={() => setIsModeModalOpen(true)}
             onOpenQrPairing={() => setIsQrPairingOpen(true)}
             onNavigateToOrders={() => setActiveTab('orders')}
+            onNavigateToMap={() => setActiveTab('map')}
             completedOrders={completedOrders}
             totalAvailableCount={availableOrders.length}
             totalActiveCount={activeOrders.length}

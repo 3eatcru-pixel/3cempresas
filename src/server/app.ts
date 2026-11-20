@@ -353,7 +353,7 @@ export function createServerCoreApp(): express.Express {
   app.use('/api/v1/store/devices/pair-login', devicePairingRateLimiter);
   app.use('/api/v1/store/devices/:id/pair', devicePairingRateLimiter);
   app.use('/api/v1/store/waiter-pairing/login', devicePairingRateLimiter);
-  app.use('/api/v1/store', storeRoutes);
+  app.use('/api/v1/store', idempotencyGuard, storeRoutes);
   app.use('/api/v1/admin/devices/:id/pair', devicePairingRateLimiter);
   app.use('/api/admin/devices/:id/pair', devicePairingRateLimiter);
   app.use('/api/v1/admin', adminRateLimiter, adminRoutes);

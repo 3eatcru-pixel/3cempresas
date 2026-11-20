@@ -243,10 +243,15 @@ export async function probeSupabaseServerHealth(
 
   try {
     const [jwksRes, healthRes] = await Promise.all([
-      fetch(runtime.jwksUrl, { method: 'GET', headers: { Accept: 'application/json' } }),
+      fetch(runtime.jwksUrl, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        signal: AbortSignal.timeout(4500),
+      }),
       fetch(`${runtime.url}/auth/v1/health`, {
         method: 'GET',
         headers: { apikey: runtime.publishableKey },
+        signal: AbortSignal.timeout(4500),
       }),
     ]);
 

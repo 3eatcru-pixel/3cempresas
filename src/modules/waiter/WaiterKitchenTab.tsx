@@ -136,10 +136,12 @@ export const WaiterKitchenTab: React.FC<WaiterKitchenTabProps> = ({
             0,
             Math.floor((nowMs - new Date(order.createdAt).getTime()) / 60000)
           );
+          const targetMin = Math.max(5, Number(order.prepTimeEstMin || 15));
           const isReady = order.status === 'READY_FOR_PICKUP';
           const isPreparing = order.status === 'IN_PREPARATION';
           const isServed = order.status === 'DELIVERED';
-          const isDelayed = !isServed && timeElapsed >= 20;
+          const isDelayed = !isServed && timeElapsed >= targetMin;
+          const isWarning = !isServed && !isDelayed && timeElapsed >= Math.floor(targetMin * 0.65);
 
           return (
             <div
@@ -147,6 +149,8 @@ export const WaiterKitchenTab: React.FC<WaiterKitchenTabProps> = ({
               className={`p-4 rounded-2xl border flex flex-col justify-between space-y-4 transition-colors ${
                 isReady
                   ? 'bg-emerald-950/35 border-emerald-500'
+                  : isDelayed
+                  ? 'bg-slate-900 border-rose-500/60'
                   : isPreparing
                   ? 'bg-slate-900 border-blue-500/50'
                   : isServed
@@ -188,11 +192,17 @@ export const WaiterKitchenTab: React.FC<WaiterKitchenTabProps> = ({
                 <div className="flex items-center justify-between text-xs text-slate-400">
                   <span
                     className={`flex items-center gap-1.5 font-mono tabular-nums ${
-                      isDelayed ? 'text-rose-400 font-semibold' : ''
+                      isDelayed
+                        ? 'text-rose-400 font-semibold'
+                        : isWarning
+                        ? 'text-amber-400 font-semibold'
+                        : !isServed
+                        ? 'text-emerald-400'
+                        : ''
                     }`}
                   >
                     <Clock className="w-3.5 h-3.5 shrink-0" />
-                    {timeElapsed} min
+                    {timeElapsed} / {targetMin} min
                   </span>
                   <span className="truncate">
                     Atendente: {(order as any).waiterName || waiterName}
@@ -210,6 +220,16 @@ export const WaiterKitchenTab: React.FC<WaiterKitchenTabProps> = ({
                           {item.quantity}x
                         </span>
                         {item.name}
+                        {item.variantLabel ? (
+                          <span className="ml-1.5 text-[11px] font-semibold text-cyan-300">
+                            [{item.variantLabel}]
+                          </span>
+                        ) : null}
+                        {Array.isArray(item.selectedOptions) && item.selectedOptions.length > 0 ? (
+                          <span className="block text-[11px] text-slate-400 font-normal mt-0.5">
+                            + {item.selectedOptions.join(', ')}
+                          </span>
+                        ) : null}
                         {item.notes ? (
                           <span className="block text-[11px] text-amber-300 italic font-normal mt-0.5">
                             Obs: {item.notes}

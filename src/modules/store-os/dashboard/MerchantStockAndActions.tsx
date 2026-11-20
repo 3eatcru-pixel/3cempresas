@@ -50,8 +50,58 @@ export const MerchantStockAndActions: React.FC<MerchantStockAndActionsProps> = (
     showNotification(`Relatório de vendas exportado: ${filename}`);
   };
 
+  const channelSummary = React.useMemo(() => {
+    const valid = todayOrders.filter((o) => o.status !== 'CANCELLED');
+    const total = valid.reduce((sum, o) => sum + Number(o.total || 0), 0);
+    const marketplaceTotal = valid
+      .filter((o) => o.channel === 'MARKETPLACE')
+      .reduce((sum, o) => sum + Number(o.total || 0), 0);
+    const directTotal = Math.max(0, total - marketplaceTotal);
+    const directPct = total > 0 ? Math.round((directTotal / total) * 100) : 0;
+    const mktPct = total > 0 ? 100 - directPct : 0;
+    return { total, directTotal, marketplaceTotal, directPct, mktPct };
+  }, [todayOrders]);
+
   return (
     <div className="space-y-6">
+      {/* Channel Mix Snapshot */}
+      <div className="bg-slate-900 rounded-3xl border border-slate-800 p-4 space-y-3 shadow-xl">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-emerald-400" /> Mix de Canais (Hoje)
+          </h3>
+          <span className="text-[10px] font-mono tabular-nums text-slate-400">
+            R$ {channelSummary.total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+        </div>
+        <div className="h-2 w-full rounded-full bg-slate-950 overflow-hidden flex">
+          <div
+            className="bg-emerald-500 h-full transition-all"
+            style={{ width: `${channelSummary.directPct}%` }}
+            title={`Venda Direta: ${channelSummary.directPct}%`}
+          />
+          <div
+            className="bg-amber-500 h-full transition-all"
+            style={{ width: `${channelSummary.mktPct}%` }}
+            title={`Marketplace: ${channelSummary.mktPct}%`}
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-2 text-[11px]">
+          <div className="bg-slate-950 border border-slate-800/80 rounded-xl px-3 py-2">
+            <div className="text-[10px] text-emerald-400 font-bold uppercase">Direto (PDV/Salão)</div>
+            <div className="font-mono tabular-nums font-bold text-white">
+              R$ {channelSummary.directTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
+          </div>
+          <div className="bg-slate-950 border border-slate-800/80 rounded-xl px-3 py-2">
+            <div className="text-[10px] text-amber-400 font-bold uppercase">Marketplace</div>
+            <div className="font-mono tabular-nums font-bold text-white">
+              R$ {channelSummary.marketplaceTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Stock Alerts Card */}
       <div className="bg-slate-900 rounded-3xl border border-slate-800 overflow-hidden shadow-xl">
         <div className="p-4 border-b border-slate-800 bg-slate-950/50">

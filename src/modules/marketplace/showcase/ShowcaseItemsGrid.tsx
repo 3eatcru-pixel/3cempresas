@@ -11,6 +11,8 @@ interface ShowcaseItemsGridProps {
   setShowcaseSearch: (val: string) => void;
   showcaseSort: 'DEFAULT' | 'PRICE_ASC' | 'PRICE_DESC' | 'NAME';
   setShowcaseSort: (val: 'DEFAULT' | 'PRICE_ASC' | 'PRICE_DESC' | 'NAME') => void;
+  availableOnly?: boolean;
+  setAvailableOnly?: (val: boolean) => void;
   selectedCategory: string;
   setSelectedCategory: (val: string) => void;
   isLightMode: boolean;
@@ -29,6 +31,8 @@ export const ShowcaseItemsGrid: React.FC<ShowcaseItemsGridProps> = ({
   setShowcaseSearch,
   showcaseSort,
   setShowcaseSort,
+  availableOnly = false,
+  setAvailableOnly,
   selectedCategory,
   setSelectedCategory,
   isLightMode,
@@ -66,30 +70,48 @@ export const ShowcaseItemsGrid: React.FC<ShowcaseItemsGridProps> = ({
           )}
         </div>
 
-        <div
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl border shrink-0 ${
-            isLightMode ? 'bg-white border-stone-200 text-stone-800' : 'bg-slate-900 border-slate-800 text-slate-200'
-          }`}
-        >
-          <ArrowUpDown className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-          <select
-            value={showcaseSort}
-            onChange={(e) => setShowcaseSort(e.target.value as any)}
-            className="bg-transparent text-[11px] font-bold focus:outline-none uppercase tracking-wider cursor-pointer"
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          {setAvailableOnly && (
+            <button
+              type="button"
+              onClick={() => setAvailableOnly(!availableOnly)}
+              className={`px-3 py-2 rounded-2xl border text-[11px] font-bold transition-all cursor-pointer ${
+                availableOnly
+                  ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300'
+                  : isLightMode
+                  ? 'bg-white border-stone-200 text-stone-700 hover:border-stone-400'
+                  : 'bg-slate-900 border-slate-800 text-slate-300 hover:text-white'
+              }`}
+            >
+              Em estoque
+            </button>
+          )}
+
+          <div
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl border shrink-0 ${
+              isLightMode ? 'bg-white border-stone-200 text-stone-800' : 'bg-slate-900 border-slate-800 text-slate-200'
+            }`}
           >
-            <option value="DEFAULT" className="bg-slate-900 text-white">
-              Ordenar: Padrão
-            </option>
-            <option value="PRICE_ASC" className="bg-slate-900 text-white">
-              Menor Preço
-            </option>
-            <option value="PRICE_DESC" className="bg-slate-900 text-white">
-              Maior Preço
-            </option>
-            <option value="NAME" className="bg-slate-900 text-white">
-              Nome (A-Z)
-            </option>
-          </select>
+            <ArrowUpDown className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <select
+              value={showcaseSort}
+              onChange={(e) => setShowcaseSort(e.target.value as any)}
+              className="bg-transparent text-[11px] font-bold focus:outline-none uppercase tracking-wider cursor-pointer"
+            >
+              <option value="DEFAULT" className="bg-slate-900 text-white">
+                Ordenar: Padrão
+              </option>
+              <option value="PRICE_ASC" className="bg-slate-900 text-white">
+                Menor Preço
+              </option>
+              <option value="PRICE_DESC" className="bg-slate-900 text-white">
+                Maior Preço
+              </option>
+              <option value="NAME" className="bg-slate-900 text-white">
+                Nome (A-Z)
+              </option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -100,12 +122,13 @@ export const ShowcaseItemsGrid: React.FC<ShowcaseItemsGridProps> = ({
           }`}
         >
           <p className="text-xs font-bold">Nenhum item encontrado para o filtro atual.</p>
-          {(showcaseSearch || selectedCategory !== 'Todos') && (
+          {(showcaseSearch || selectedCategory !== 'Todos' || availableOnly) && (
             <button
               type="button"
               onClick={() => {
                 setShowcaseSearch('');
                 setSelectedCategory('Todos');
+                setAvailableOnly?.(false);
               }}
               className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs uppercase rounded-xl cursor-pointer"
             >

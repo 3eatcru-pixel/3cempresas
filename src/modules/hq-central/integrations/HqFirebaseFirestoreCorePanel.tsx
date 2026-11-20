@@ -4,11 +4,6 @@ import {
   CheckCircle2,
   Database,
   RefreshCw,
-  Save,
-  Shield,
-  Sliders,
-  Trash2,
-  UserPlus,
 } from 'lucide-react';
 import {
   checkCurrentUserIsFirestoreAdmin,
@@ -23,6 +18,8 @@ import {
   saveFirebaseCloudPreferences,
   subscribeFirebaseAuthUser,
 } from '../../../services/firebaseClient';
+import { HqFirebasePreferencesForm } from './HqFirebasePreferencesForm';
+import { HqFirebaseAdminsManager } from './HqFirebaseAdminsManager';
 
 interface HqFirebaseFirestoreCorePanelProps {
   firebaseEnabled: boolean;
@@ -245,181 +242,34 @@ export const HqFirebaseFirestoreCorePanel: React.FC<HqFirebaseFirestoreCorePanel
           )}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* /cloud_preferences/{uid} */}
-            <form
-              onSubmit={(e) => void handleSavePreferences(e)}
-              className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <h4 className="text-xs font-black uppercase tracking-wider text-white flex items-center gap-1.5">
-                  <Sliders className="w-3.5 h-3.5 text-amber-400" />
-                  Preferências Multi-Dispositivo
-                </h4>
-                <span className="text-[10px] font-mono text-slate-400 truncate max-w-[180px]">
-                  {activeGoogleUser?.email}
-                </span>
-              </div>
+            <HqFirebasePreferencesForm
+              activeEmail={activeGoogleUser?.email}
+              locale={locale}
+              setLocale={setLocale}
+              theme={theme}
+              setTheme={setTheme}
+              notificationsEnabled={notificationsEnabled}
+              setNotificationsEnabled={setNotificationsEnabled}
+              prefsUpdatedAt={prefsUpdatedAt}
+              prefsBusy={prefsBusy}
+              onSave={(e) => void handleSavePreferences(e)}
+              onDelete={() => void handleDeletePreferences()}
+            />
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase text-slate-400">Idioma (locale)</label>
-                  <select
-                    value={locale}
-                    onChange={(e) => setLocale(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white"
-                  >
-                    <option value="pt-BR">pt-BR (Português)</option>
-                    <option value="en-US">en-US (English)</option>
-                    <option value="es-ES">es-ES (Español)</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase text-slate-400">Tema Visual</label>
-                  <select
-                    value={theme}
-                    onChange={(e) => setTheme(e.target.value as FirebaseCloudTheme)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white"
-                  >
-                    <option value="dark">Escuro (Dark)</option>
-                    <option value="light">Claro (Light)</option>
-                    <option value="system">Sistema (System)</option>
-                  </select>
-                </div>
-              </div>
-
-              <label className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-slate-950 border border-slate-800 cursor-pointer">
-                <span className="text-[11px] text-slate-300">Receber notificações de governança</span>
-                <input
-                  type="checkbox"
-                  checked={notificationsEnabled}
-                  onChange={(e) => setNotificationsEnabled(e.target.checked)}
-                  className="w-4 h-4 accent-amber-500 cursor-pointer"
-                />
-              </label>
-
-              <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                <span className="text-[10px] font-mono text-slate-500">
-                  {prefsUpdatedAt ? `Sincronizado: ${new Date(prefsUpdatedAt).toLocaleString('pt-BR')}` : 'Ainda não salvo'}
-                </span>
-                <div className="flex items-center gap-2">
-                  {prefsUpdatedAt && (
-                    <button
-                      type="button"
-                      disabled={prefsBusy}
-                      onClick={() => void handleDeletePreferences()}
-                      className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-red-500/20 text-slate-300 hover:text-red-300 text-[10px] font-bold flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      Limpar
-                    </button>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={prefsBusy}
-                    className="px-3 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                  >
-                    <Save className="w-3 h-3" />
-                    {prefsBusy ? 'Salvando...' : 'Sincronizar'}
-                  </button>
-                </div>
-              </div>
-            </form>
-
-            {/* /admins/{adminId} */}
-            <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <h4 className="text-xs font-black uppercase tracking-wider text-white flex items-center gap-1.5">
-                  <Shield className="w-3.5 h-3.5 text-emerald-400" />
-                  Admins Autorizados no Firestore (/admins)
-                </h4>
-                <span className="text-[10px] font-mono text-slate-400">{admins.length} registro(s)</span>
-              </div>
-
-              {isDevOwner ? (
-                <form onSubmit={(e) => void handleGrantAdmin(e)} className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <input
-                    type="text"
-                    required
-                    value={newAdminUid}
-                    onChange={(e) => setNewAdminUid(e.target.value)}
-                    placeholder="UID Firebase"
-                    className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-white"
-                  />
-                  <input
-                    type="email"
-                    required
-                    value={newAdminEmail}
-                    onChange={(e) => setNewAdminEmail(e.target.value)}
-                    placeholder="admin@empresa.com"
-                    className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-white"
-                  />
-                  <button
-                    type="submit"
-                    disabled={adminsBusy}
-                    className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-[10px] font-black uppercase tracking-wider flex items-center justify-center gap-1 cursor-pointer disabled:opacity-50"
-                  >
-                    <UserPlus className="w-3.5 h-3.5" />
-                    Conceder
-                  </button>
-                </form>
-              ) : (
-                <p className="text-[11px] text-slate-500">Somente DEV_OWNER pode conceder ou revogar /admins.</p>
-              )}
-
-              <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-                {admins.length === 0 ? (
-                  <p className="text-[11px] text-slate-500 italic">
-                    Nenhum admin adicional cadastrado em /admins (bootstrap owner ativo via rules).
-                  </p>
-                ) : (
-                  admins.map((admin) => {
-                    const isSelf = admin.uid === activeGoogleUser?.uid;
-                    const confirming = confirmRevokeUid === admin.uid;
-                    return (
-                      <div
-                        key={admin.uid}
-                        className="flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg bg-slate-950 border border-slate-800 text-[11px]"
-                      >
-                        <div className="min-w-0">
-                          <div className="font-bold text-slate-200 truncate">{admin.email}</div>
-                          <div className="text-[10px] font-mono text-slate-500 truncate">UID: {admin.uid}</div>
-                        </div>
-                        {isDevOwner && !isSelf && (
-                          confirming ? (
-                            <div className="flex items-center gap-1 shrink-0">
-                              <button
-                                type="button"
-                                disabled={adminsBusy}
-                                onClick={() => void handleRevokeAdmin(admin.uid)}
-                                className="px-2 py-1 rounded bg-red-600 text-white text-[10px] font-black cursor-pointer"
-                              >
-                                Confirmar
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => setConfirmRevokeUid(null)}
-                                className="px-2 py-1 rounded bg-slate-800 text-slate-300 text-[10px] font-bold cursor-pointer"
-                              >
-                                Cancelar
-                              </button>
-                            </div>
-                          ) : (
-                            <button
-                              type="button"
-                              disabled={adminsBusy}
-                              onClick={() => setConfirmRevokeUid(admin.uid)}
-                              className="px-2 py-1 rounded bg-slate-800 hover:bg-red-500/20 text-slate-300 hover:text-red-300 text-[10px] font-bold shrink-0 cursor-pointer"
-                            >
-                              Revogar
-                            </button>
-                          )
-                        )}
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
+            <HqFirebaseAdminsManager
+              isDevOwner={isDevOwner}
+              activeUserUid={activeGoogleUser?.uid}
+              admins={admins}
+              adminsBusy={adminsBusy}
+              newAdminUid={newAdminUid}
+              setNewAdminUid={setNewAdminUid}
+              newAdminEmail={newAdminEmail}
+              setNewAdminEmail={setNewAdminEmail}
+              confirmRevokeUid={confirmRevokeUid}
+              setConfirmRevokeUid={setConfirmRevokeUid}
+              onGrantAdmin={(e) => void handleGrantAdmin(e)}
+              onRevokeAdmin={(uid) => void handleRevokeAdmin(uid)}
+            />
           </div>
         </>
       )}
