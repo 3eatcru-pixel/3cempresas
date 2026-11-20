@@ -367,13 +367,27 @@ fn main() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(EdgeSidecarState {
             running: Arc::clone(&sidecar_running),
             port: sidecar_port,
             child: Mutex::new(None),
         })
         .setup(move |app| {
+            let has_updater_pubkey = app
+                .config()
+                .plugins
+                .0
+                .get("updater")
+                .and_then(|u| u.get("pubkey"))
+                .and_then(|v| v.as_str())
+                .map(|s| !s.trim().is_empty())
+                .unwrap_or(false);
+            if has_updater_pubkey {
+                if let Err(err) = app.handle().plugin(tauri_plugin_updater::Builder::new().build()) {
+                    eprintln!("[3C Store OS] Updater plugin não inicializado: {err}");
+                }
+            }
+
             let handle = app.handle().clone();
             if let Ok(child) = spawn_edge_sidecar(&handle, sidecar_port) {
                 let state = app.state::<EdgeSidecarState>();
