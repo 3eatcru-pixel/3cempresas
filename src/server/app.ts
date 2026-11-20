@@ -271,6 +271,8 @@ export function createServerCoreApp(): express.Express {
         error: 'Operação bloqueada em produção: banco Cloud primário (PostgreSQL) não configurado. Configure o driver Cloud ou defina ALLOW_SANDBOX_IN_PRODUCTION=true explicitamente.',
         persistenceDriver: caps.persistenceDriver,
         persistenceMode: caps.persistenceMode,
+        databaseProvider: caps.databaseProvider,
+        cloudProbeError: caps.cloudProbeError,
       });
     }
     return next();

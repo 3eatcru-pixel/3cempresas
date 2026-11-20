@@ -95,7 +95,8 @@ export async function probeCloudDatabase(): Promise<CloudProbeResult> {
   const target = resolvePostgresConnectionTarget(process.env);
   const pgOptedIn =
     process.env.ENABLE_POSTGRES_CLOUD === 'true' ||
-    process.env.ALLOW_INCOMPLETE_POSTGRES_DRIVER === 'true';
+    process.env.ALLOW_INCOMPLETE_POSTGRES_DRIVER === 'true' ||
+    (target.configured && process.env.ENABLE_POSTGRES_CLOUD !== 'false');
 
   if (!target.configured || !pgOptedIn) {
     cloudSyncDriver = null;
@@ -200,7 +201,8 @@ export function getRuntimePersistenceCapabilities() {
   const target = resolvePostgresConnectionTarget(process.env);
   const pgOptedIn =
     process.env.ENABLE_POSTGRES_CLOUD === 'true' ||
-    process.env.ALLOW_INCOMPLETE_POSTGRES_DRIVER === 'true';
+    process.env.ALLOW_INCOMPLETE_POSTGRES_DRIVER === 'true' ||
+    (target.configured && process.env.ENABLE_POSTGRES_CLOUD !== 'false');
   const productionDatabaseReady = Boolean(target.configured && pgOptedIn && cloudProbeState.verified && cloudSyncDriver);
   const sandboxModeBlockedInProduction =
     process.env.NODE_ENV === 'production' &&
