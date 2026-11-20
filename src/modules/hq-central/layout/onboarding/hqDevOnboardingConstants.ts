@@ -52,6 +52,8 @@ export const FALLBACK_CLOUD_RUN_VARS: EnvReadinessVariable[] = [
   { key: 'SAAS_PSP_WEBHOOK_SECRET', scope: 'Cofre HQ / Segredo Server', configured: false, requiredInProduction: false, note: 'Segredo HMAC de assinaturas SaaS (env ou cofre PAYMENT no HQ)' },
   { key: 'EMAIL_WEBHOOK_URL / SECRET', scope: 'HQ + Segredo Server', configured: false, requiredInProduction: false, note: 'Endpoint via HQ/Server e segredo HMAC no Secret Manager' },
   { key: 'SERVER_STORAGE_DIR', scope: 'Server Core Storage', configured: false, requiredInProduction: false, note: 'Diretório em volume persistente (cotas gerenciadas no HQ)' },
+  { key: 'SUPABASE_URL / PUBLISHABLE_KEY', scope: 'HQ + Server Core (Opcional)', configured: false, requiredInProduction: false, note: 'Endpoint público e chave publishable para Auth JWKS e cliente RLS' },
+  { key: 'SUPABASE_SECRET_KEY', scope: 'Segredo Server Core', configured: false, requiredInProduction: false, note: 'Chave secreta admin apenas no Secret Manager do Server Core' },
 ];
 
 export const CLOUD_RUN_ENV_TEMPLATE = `# ===================================================================
@@ -87,4 +89,10 @@ SAAS_PSP_WEBHOOK_SECRET="<SEGREDO_HMAC_PSP_SAAS>"
 EMAIL_WEBHOOK_URL="<ENDPOINT_HTTPS_DISPARO_EMAIL>"
 EMAIL_WEBHOOK_SECRET="<SEGREDO_HMAC_EMAIL>"
 SERVER_STORAGE_DIR="/var/lib/3c-storage"
+
+# Conector Opcional Supabase (@supabase/server + @supabase/supabase-js)
+SUPABASE_URL="<HTTPS_URL_PROJETO_SUPABASE>"
+SUPABASE_PUBLISHABLE_KEY="<SB_PUBLISHABLE_KEY>"
+SUPABASE_JWKS_URL="<HTTPS_URL_PROJETO_SUPABASE>/auth/v1/.well-known/jwks.json"
+SUPABASE_SECRET_KEY="<SB_SECRET_KEY_APENAS_SERVER>"
 `;

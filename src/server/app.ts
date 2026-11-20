@@ -15,6 +15,7 @@ import syncRoutes from './routes/sync.ts';
 import systemRoutes from './routes/system.ts';
 import storageRoutes from './routes/storage.ts';
 import mapsRoutes from './routes/maps.ts';
+import supabaseRoutes from './routes/supabase.ts';
 
 import {
   RateLimitEntry,
@@ -362,6 +363,7 @@ export function createServerCoreApp(): express.Express {
   app.use('/api/v1/sync', idempotencyGuard, syncRoutes);
   app.use('/api/v1/storage', storageRoutes);
   app.use('/api/v1/maps', mapsRateLimiter, mapsRoutes);
+  app.use('/api/v1/supabase', adminRateLimiter, supabaseRoutes);
 
   return app;
 }

@@ -59,6 +59,9 @@ export const DEFAULT_PLATFORM_RUNTIME_POLICY: PlatformRuntimePolicy = {
   extraAllowedOrigins: [],
   firebaseProjectIdOverride: '',
   emailWebhookUrl: '',
+  supabaseUrl: '',
+  supabasePublishableKey: '',
+  supabaseJwksUrl: '',
 };
 
 export const DEFAULT_MARKETPLACE_GOVERNANCE_CONFIG: MarketplaceGovernanceConfig = {
@@ -217,6 +220,9 @@ export const DEFAULT_PLATFORM_GOVERNANCE: PlatformGovernance = {
     firebaseEnabled: true,
     firebaseAuthEnabled: true,
     firebaseFirestoreEnabled: true,
+    supabaseEnabled: true,
+    supabaseAuthEnabled: true,
+    supabaseDbEnabled: true,
   },
   planPricing: {
     FREE: { monthlyPrice: 0, quarterlyPrice: 0, annualPrice: 0, maxDevices: 2, maxBranches: 1 },

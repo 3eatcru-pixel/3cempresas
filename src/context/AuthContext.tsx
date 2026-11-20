@@ -6,6 +6,7 @@ import {
   getPlatformAdapters,
 } from '../core/platform/PlatformAdapter';
 import { apiClient } from '../core/api/apiClient';
+import { configureSupabaseClientRuntime } from '../services/supabaseClient';
 import {
   AuthContextType,
   AuthModalContextId,
@@ -47,6 +48,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           ? Boolean(providers.firebaseFirestoreEnabled)
           : Boolean(providers?.firebaseEnabled)
       );
+      if (providers?.supabaseUrl || providers?.supabasePublishableKey || providers?.supabaseJwksUrl) {
+        configureSupabaseClientRuntime({
+          url: providers.supabaseUrl,
+          publishableKey: providers.supabasePublishableKey,
+          jwksUrl: providers.supabaseJwksUrl,
+        });
+      }
     } catch {
       setFirebaseEnabled(false);
       setFirebaseFirestoreEnabled(false);

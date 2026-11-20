@@ -65,7 +65,7 @@ O projeto utiliza **npm workspaces** combinando o servidor full-stack unificado 
 │   └── edge-node/                 # Servidor local offline-first (@3c/edge-node)
 ├── scripts/
 │   └── sentinel.ts                # Auditor 3C Sentinel 1.0
-├── tests/                         # 20 suítes cobrindo segurança, RLS, sync HLC, UX e E2E
+├── tests/                         # 21 suítes cobrindo segurança, RLS, sync HLC, UX e E2E
 └── docs/                          # Documentação canônica (ecosystem, architecture, pillars)
 ```
 

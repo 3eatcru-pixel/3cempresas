@@ -7,7 +7,9 @@ import { HqIntegrationCard } from './integrations/HqIntegrationCard';
 import { HqProviderTierCards } from './integrations/HqProviderTierCards';
 import { HqFirebaseServicesGrid } from './integrations/HqFirebaseServicesGrid';
 import { HqFirebaseFirestoreCorePanel } from './integrations/HqFirebaseFirestoreCorePanel';
+import { HqSupabaseServicesGrid } from './integrations/HqSupabaseServicesGrid';
 import { getFirebaseRuntimeMetadata } from '../../services/firebaseClient';
+import { getSupabaseRuntimeMetadata } from '../../services/supabaseClient';
 import {
   IntegrationProviderDescriptor,
   providerManager,
@@ -50,7 +52,9 @@ export const HqIntegrationsTab: React.FC = () => {
   const firebaseEnabled = governance?.featureFlags?.firebaseEnabled !== false;
   const firebaseFirestoreEnabled =
     firebaseEnabled && governance?.featureFlags?.firebaseFirestoreEnabled !== false;
+  const supabaseEnabled = governance?.featureFlags?.supabaseEnabled !== false;
   const firebaseMeta = getFirebaseRuntimeMetadata();
+  const supabaseMeta = getSupabaseRuntimeMetadata();
 
   useEffect(() => {
     providerManager.syncGovernance(governance);
@@ -106,6 +110,7 @@ export const HqIntegrationsTab: React.FC = () => {
 
   const primaryDescriptor = providerDescriptors.find((d) => d.id === 'PRIMARY_SERVER_CORE');
   const secondaryDescriptor = providerDescriptors.find((d) => d.id === 'SECONDARY_FIREBASE_PROVIDER');
+  const supabaseDescriptor = providerDescriptors.find((d) => d.id === 'SECONDARY_SUPABASE_PROVIDER');
 
   return (
     <div className="bg-slate-900 p-6 rounded-2xl border border-slate-800 space-y-6 animate-fadeIn">
@@ -118,7 +123,7 @@ export const HqIntegrationsTab: React.FC = () => {
           <p className="text-xs text-slate-400 max-w-2xl mt-1">
             Gerencia provedores primários e secundários, conexões, sincronização e disponibilidade. O{' '}
             <strong className="text-cyan-300">Server Core próprio é a autoridade única dos dados comerciais</strong>,
-            enquanto provedores externos (como Firebase) operam como adaptadores secundários opcionais.
+            enquanto Firebase e Supabase operam como adaptadores secundários opcionais.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
@@ -146,11 +151,24 @@ export const HqIntegrationsTab: React.FC = () => {
       <HqProviderTierCards
         primaryDescriptor={primaryDescriptor}
         secondaryDescriptor={secondaryDescriptor}
+        supabaseDescriptor={supabaseDescriptor}
         firebaseEnabled={firebaseEnabled}
         firebaseProjectId={firebaseMeta.projectId}
+        supabaseEnabled={supabaseEnabled}
+        supabaseUrl={governance?.runtimePolicy?.supabaseUrl || supabaseMeta.url}
         isDevOwner={isDevOwner}
         togglingFlag={togglingFlag}
         onToggleFirebaseEnabled={() => void handleToggleFlag('firebaseEnabled')}
+        onToggleSupabaseEnabled={() => void handleToggleFlag('supabaseEnabled')}
+      />
+
+      <HqSupabaseServicesGrid
+        governance={governance}
+        supabaseEnabled={supabaseEnabled}
+        statusDetail={supabaseDescriptor?.statusDetail}
+        isDevOwner={isDevOwner}
+        togglingFlag={togglingFlag}
+        onToggleFlag={(key) => void handleToggleFlag(key)}
       />
 
       <HqFirebaseServicesGrid

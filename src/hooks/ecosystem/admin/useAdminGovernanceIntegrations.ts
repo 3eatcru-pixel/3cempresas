@@ -149,7 +149,10 @@ export const useAdminGovernanceIntegrations = ({
       if (
         (flagKey === 'firebaseEnabled' ||
           flagKey === 'firebaseAuthEnabled' ||
-          flagKey === 'firebaseFirestoreEnabled') &&
+          flagKey === 'firebaseFirestoreEnabled' ||
+          flagKey === 'supabaseEnabled' ||
+          flagKey === 'supabaseAuthEnabled' ||
+          flagKey === 'supabaseDbEnabled') &&
         typeof window !== 'undefined'
       ) {
         window.dispatchEvent(new CustomEvent('3c:auth-providers-changed'));
@@ -161,6 +164,12 @@ export const useAdminGovernanceIntegrations = ({
           ? `Firebase Authentication (Google OAuth) ${newFlags.firebaseAuthEnabled ? 'ATIVADO' : 'DESATIVADO'}!`
           : flagKey === 'firebaseFirestoreEnabled'
           ? `Firestore Cores (/users, /cloud_preferences & /admins) ${newFlags.firebaseFirestoreEnabled ? 'ATIVADO' : 'DESATIVADO'}!`
+          : flagKey === 'supabaseEnabled'
+          ? `Supabase Provider ${newFlags.supabaseEnabled ? 'ATIVADO' : 'DESATIVADO'} no ecossistema!`
+          : flagKey === 'supabaseAuthEnabled'
+          ? `Supabase Auth JWKS ${newFlags.supabaseAuthEnabled ? 'ATIVADO' : 'DESATIVADO'}!`
+          : flagKey === 'supabaseDbEnabled'
+          ? `Supabase Client & PostgREST ${newFlags.supabaseDbEnabled ? 'ATIVADO' : 'DESATIVADO'}!`
           : `Feature Flag "${flagKey}" atualizada!`
       );
       logSystemEvent('HQ_FEATURE_TOGGLE', `Feature flag ${flagKey} alterada.`, 'hq/governance');

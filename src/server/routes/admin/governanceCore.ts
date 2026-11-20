@@ -521,6 +521,47 @@ router.put('/governance', verifyAutonomousToken, requireRoles(['DEV_OWNER']), as
         return res.status(400).json({ error: 'emailWebhookUrl deve iniciar com https://.' });
       }
 
+      const supabaseUrl =
+        incoming.supabaseUrl !== undefined
+          ? String(incoming.supabaseUrl || '').trim().replace(/\/+$/, '').slice(0, 300)
+          : existingPolicy.supabaseUrl || '';
+      if (supabaseUrl) {
+        let parsedSb: URL;
+        try {
+          parsedSb = new URL(supabaseUrl);
+        } catch {
+          return res.status(400).json({ error: 'supabaseUrl inválida.' });
+        }
+        const isLocalSb =
+          parsedSb.protocol === 'http:' &&
+          (parsedSb.hostname === 'localhost' || parsedSb.hostname === '127.0.0.1');
+        if (parsedSb.protocol !== 'https:' && !isLocalSb) {
+          return res.status(400).json({ error: 'supabaseUrl deve iniciar com https://.' });
+        }
+      }
+
+      const supabaseJwksUrl =
+        incoming.supabaseJwksUrl !== undefined
+          ? String(incoming.supabaseJwksUrl || '').trim().slice(0, 320)
+          : existingPolicy.supabaseJwksUrl || '';
+      if (supabaseJwksUrl && !/^https?:\/\/.+/i.test(supabaseJwksUrl)) {
+        return res.status(400).json({ error: 'supabaseJwksUrl inválida.' });
+      }
+
+      const supabasePublishableKey =
+        incoming.supabasePublishableKey !== undefined
+          ? String(incoming.supabasePublishableKey || '').trim().slice(0, 400)
+          : existingPolicy.supabasePublishableKey || '';
+      if (
+        supabasePublishableKey &&
+        (/^sb_secret_/i.test(supabasePublishableKey) || /service_role/i.test(supabasePublishableKey))
+      ) {
+        return res.status(400).json({
+          error:
+            'Chaves secretas (SUPABASE_SECRET_KEY / service_role) nunca podem ser gravadas em runtimePolicy; mantenha-as apenas no Secret Manager do Server Core.',
+        });
+      }
+
       normalizedPatch.runtimePolicy = {
         storageMaxObjectBytes,
         storageTenantQuotaBytes,
@@ -529,6 +570,9 @@ router.put('/governance', verifyAutonomousToken, requireRoles(['DEV_OWNER']), as
         extraAllowedOrigins: nextOrigins,
         firebaseProjectIdOverride,
         emailWebhookUrl,
+        supabaseUrl,
+        supabasePublishableKey,
+        supabaseJwksUrl,
         updatedAt: new Date().toISOString(),
       };
     }

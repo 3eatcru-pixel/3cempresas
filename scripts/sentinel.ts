@@ -1030,6 +1030,14 @@ function runSuites(tmpSandboxDir: string): { results: SuiteResult[]; skippedSuit
       boundary: 'UX & Autenticação Isolada (5 Personas)',
       quickInclude: true,
     },
+    {
+      id: 'supabase-optional-connector',
+      label: 'Conector Opcional Supabase (@supabase/supabase-js + @supabase/server)',
+      scriptPath: 'tests/security/supabase-optional-connector.test.ts',
+      pillars: ['HQ Central', 'Server Core', 'Marketplace'],
+      boundary: 'Server Core ↔ Conector Opcional Supabase',
+      quickInclude: true,
+    },
   ];
 
   const selected = isQuickMode ? suites.filter((s) => s.quickInclude) : suites;

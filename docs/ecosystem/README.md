@@ -79,7 +79,7 @@ Transparência operacional do que está verificado versus o que depende de ambie
 | Camada / Alvo | Estado Atual | Observação Real |
 | :--- | :--- | :--- |
 | **Web / SPA (5 produtos + Portal)** | Verificado | Build unificado e 5 builds independentes (`npm run build:apps`) verdes |
-| **Server Core (Node/Express)** | Verificado | 20 suítes de testes + 20 scanners no 3C Sentinel 1.0 operacionais |
+| **Server Core (Node/Express)** | Verificado | 21 suítes de testes + 20 scanners no 3C Sentinel 1.0 operacionais |
 | **3C Edge Node (SQLite WAL)** | Verificado | Persistência local (`node:sqlite` / SQLite `>= 3.51.3`), HLC e `sync_outbox` validados |
 | **PostgreSQL Cloud + RLS** | Implementado (pendente homologação multi-instância) | Driver `PostgresCloudDriver` com `SELECT ... FOR UPDATE` e `FORCE ROW LEVEL SECURITY` exige instância live (`DATABASE_URL` + `ENABLE_POSTGRES_CLOUD=true`) |
 | **Desktop Tauri 2 (OS Lojista)** | Scaffold pronto (pendente homologação nativa) | Sidecar, USB/Serial ESC-POS e binários Windows/macOS/Linux exigem validação em máquina nativa |

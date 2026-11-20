@@ -19,6 +19,8 @@ import {
   getConfiguredFirebaseProjectId,
   verifyFirebaseIdToken,
 } from './auth/firebaseTokenVerifier.ts';
+import { resolveSupabaseServerRuntime } from '../services/supabaseProvider.ts';
+import supabaseExchangeRoute, { getSupabaseGovernanceState } from './auth/supabaseExchangeRoute.ts';
 import { DEFAULT_PLATFORM_GOVERNANCE } from '../../constants/platformDefaults.ts';
 
 const router = express.Router();
@@ -543,9 +545,13 @@ router.post('/login', async (req, res) => {
 });
 
 router.get('/providers', async (_req, res) => {
-  const state = await getFirebaseGovernanceState();
+  const [state, sbState] = await Promise.all([
+    getFirebaseGovernanceState(),
+    getSupabaseGovernanceState(),
+  ]);
   const firebaseProjectId = getConfiguredFirebaseProjectId(state.projectIdOverride);
   const configured = Boolean(firebaseProjectId);
+  const sbRuntime = resolveSupabaseServerRuntime(sbState.govData);
   res.setHeader('Cache-Control', 'no-store');
   res.json({
     autonomousEmailPassword: true,
@@ -556,6 +562,14 @@ router.get('/providers', async (_req, res) => {
     firebaseConfigured: configured,
     firebaseProjectId: firebaseProjectId || null,
     googlePopupSupported: Boolean(state.authEnabled && configured),
+    supabaseEnabled: Boolean(sbState.authEnabled && sbRuntime.configured),
+    supabaseMasterEnabled: Boolean(sbState.masterEnabled && sbRuntime.configured),
+    supabaseAuthEnabled: Boolean(sbState.authEnabled && sbRuntime.configured),
+    supabaseDbEnabled: Boolean(sbState.dbEnabled && sbRuntime.configured),
+    supabaseConfigured: sbRuntime.configured,
+    supabaseUrl: sbRuntime.url || null,
+    supabasePublishableKey: sbRuntime.publishableKey || null,
+    supabaseJwksUrl: sbRuntime.jwksUrl || null,
   });
 });
 
@@ -925,6 +939,7 @@ router.get('/me', async (req, res) => {
   }
 });
 
+router.use(supabaseExchangeRoute);
 router.use(accountRecoveryAndLgpdRoutes);
 
 export default router;

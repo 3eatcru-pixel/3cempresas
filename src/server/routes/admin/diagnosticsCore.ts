@@ -160,6 +160,27 @@ router.get(
         requiredInProduction: false,
         note: 'Diretório em volume persistente (cotas de upload governadas no HQ).',
       },
+      {
+        key: 'SUPABASE_URL / PUBLISHABLE_KEY',
+        scope: 'HQ + Server Core (Opcional)',
+        configured: Boolean(
+          (String(hqRuntimePolicy.supabaseUrl || '').trim() ||
+            process.env.SUPABASE_URL?.trim() ||
+            process.env.VITE_SUPABASE_URL?.trim()) &&
+            (String(hqRuntimePolicy.supabasePublishableKey || '').trim() ||
+              process.env.SUPABASE_PUBLISHABLE_KEY?.trim() ||
+              process.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim())
+        ),
+        requiredInProduction: false,
+        note: 'Endpoint público e chave publishable para Auth JWKS e cliente RLS opcional.',
+      },
+      {
+        key: 'SUPABASE_SECRET_KEY',
+        scope: 'Segredo Server Core',
+        configured: Boolean(process.env.SUPABASE_SECRET_KEY?.trim() || process.env.SUPABASE_SECRET_KEYS?.trim()),
+        requiredInProduction: false,
+        note: 'Chave administrativa secreta mantida apenas no Server Core / Secret Manager (nunca no frontend).',
+      },
     ];
 
     res.json({

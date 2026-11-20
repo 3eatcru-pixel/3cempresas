@@ -10,6 +10,7 @@ import {
 import { ServerGoldenSignalsCard } from './health/ServerGoldenSignalsCard';
 import { ServerRateLimitAndSseGrid } from './health/ServerRateLimitAndSseGrid';
 import { ServerFirebaseBackboneCard } from './health/ServerFirebaseBackboneCard';
+import { ServerSupabaseBackboneCard } from './health/ServerSupabaseBackboneCard';
 
 export const ServerHealthTab: React.FC = () => {
   const { governance, stores, orders, drivers, tables, deviceLicenses, showNotification } = useEcosystem();
@@ -79,6 +80,11 @@ export const ServerHealthTab: React.FC = () => {
     firebaseEnabled && governance?.featureFlags?.firebaseAuthEnabled !== false;
   const firebaseFirestoreEnabled =
     firebaseEnabled && governance?.featureFlags?.firebaseFirestoreEnabled !== false;
+  const supabaseEnabled = governance?.featureFlags?.supabaseEnabled !== false;
+  const supabaseAuthEnabled =
+    supabaseEnabled && governance?.featureFlags?.supabaseAuthEnabled !== false;
+  const supabaseDbEnabled =
+    supabaseEnabled && governance?.featureFlags?.supabaseDbEnabled !== false;
 
   return (
     <div className="space-y-6 animate-fadeIn">
@@ -99,6 +105,13 @@ export const ServerHealthTab: React.FC = () => {
         firebaseEnabled={firebaseEnabled}
         firebaseAuthEnabled={firebaseAuthEnabled}
         firebaseFirestoreEnabled={firebaseFirestoreEnabled}
+      />
+
+      <ServerSupabaseBackboneCard
+        supabaseEnabled={supabaseEnabled}
+        supabaseAuthEnabled={supabaseAuthEnabled}
+        supabaseDbEnabled={supabaseDbEnabled}
+        runtimeSupabaseUrl={governance?.runtimePolicy?.supabaseUrl}
       />
 
       <ServerGoldenSignalsCard

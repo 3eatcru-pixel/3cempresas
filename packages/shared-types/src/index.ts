@@ -792,6 +792,9 @@ export interface PlatformGovernance {
     firebaseAuthEnabled?: boolean;
     firebaseFirestoreEnabled?: boolean;
     firebaseMirrorSyncEnabled?: boolean;
+    supabaseEnabled?: boolean;
+    supabaseAuthEnabled?: boolean;
+    supabaseDbEnabled?: boolean;
   };
   planPricing?: {
     [key in SubscriptionPlanTier]?: {
@@ -886,6 +889,9 @@ export interface PlatformRuntimePolicy {
   extraAllowedOrigins: string[];
   firebaseProjectIdOverride?: string;
   emailWebhookUrl?: string;
+  supabaseUrl?: string;
+  supabasePublishableKey?: string;
+  supabaseJwksUrl?: string;
   updatedAt?: string;
 }
 

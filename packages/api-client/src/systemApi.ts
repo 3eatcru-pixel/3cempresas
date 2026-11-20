@@ -146,4 +146,26 @@ export const systemApi = {
     }
     return resp.json();
   },
+
+  async getSupabaseHealth(token?: string) {
+    return requestJson<{
+      online: boolean;
+      standbyByHq?: boolean;
+      configured: boolean;
+      hasSecretKey: boolean;
+      masterEnabled: boolean;
+      authEnabled: boolean;
+      dbEnabled: boolean;
+      url: string;
+      jwksUrl: string;
+      jwksReachable: boolean;
+      authHealthStatus: number | null;
+      latencyMs: number;
+      source: string;
+      detail: string;
+    }>('/supabase/health', {
+      method: 'GET',
+      token,
+    });
+  },
 };

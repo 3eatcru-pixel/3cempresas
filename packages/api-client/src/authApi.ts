@@ -11,6 +11,14 @@ export const authApi = {
       firebaseConfigured: boolean;
       firebaseProjectId: string | null;
       googlePopupSupported: boolean;
+      supabaseEnabled?: boolean;
+      supabaseMasterEnabled?: boolean;
+      supabaseAuthEnabled?: boolean;
+      supabaseDbEnabled?: boolean;
+      supabaseConfigured?: boolean;
+      supabaseUrl?: string | null;
+      supabasePublishableKey?: string | null;
+      supabaseJwksUrl?: string | null;
     }>('/auth/providers', {
       method: 'GET',
       skipAuthInvalidationOn401: true,
@@ -19,6 +27,14 @@ export const authApi = {
 
   async loginWithFirebaseToken(payload: { idToken: string; contextId: string }) {
     return requestJson<{ token: string; user: any }>('/auth/firebase-exchange', {
+      method: 'POST',
+      body: payload,
+      skipAuthInvalidationOn401: true,
+    });
+  },
+
+  async loginWithSupabaseToken(payload: { accessToken: string; contextId: string }) {
+    return requestJson<{ token: string; user: any }>('/auth/supabase-exchange', {
       method: 'POST',
       body: payload,
       skipAuthInvalidationOn401: true,

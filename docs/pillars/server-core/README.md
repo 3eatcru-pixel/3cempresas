@@ -38,6 +38,7 @@ Responsabilidades centrais:
 | `/api/v1/maps/*` | Mapas e Rotas | Integração OpenFreeMap / PMTiles e roteamento multi-parada OSRM |
 | `/api/v1/system/*` | Sistema & Releases | Configuração pública sanitizada, saúde (`status`), manifestos de releases (`/releases/manifest`) e artefatos (`/releases/artifacts`) |
 | `/api/v1/storage/*` | Armazenamento | Upload/leitura de mídia em `LOCAL_VOLUME` com cotas governadas por `runtimePolicy` + env |
+| `/api/v1/supabase/*` | Conector Supabase | Probe de saúde JWKS/Secret (`@supabase/server`) e diagnóstico administrativo |
 | `/api/v1/ai/*` | Concierge IA | Proxy server-side opcional com fallback determinístico honesto quando indisponível |
 | `/api/v1/health` | Saúde | Diagnóstico de runtime, driver de persistência (`productionDatabaseReady`) e status de manutenção |
 
@@ -57,4 +58,4 @@ Responsabilidades centrais:
 
 - **WhatsApp Híbrido (`src/server/routes/store/whatsappConnectorCore.ts`):** Suporta tanto links diretos `wa.me` quanto conector opcional via API para gatilhos de pedido e campanhas, armazenando credenciais no cofre `AES-256-GCM`.
 - **Mapas e Logística:** Tiles leves via OpenFreeMap/PMTiles e cálculo de sequência/rota multi-parada via OSRM com fallback gracioso.
-- **Separação Config vs Segredos:** Variáveis operacionais não secretas (limites de upload, origens CORS extras, webhook URL de e-mail, URL de releases e preços de planos) são resolvidas dinamicamente da governança do **HQ Central** (`runtimePolicy` / `releaseConfig` / `planPricing`) com fallback para `process.env`. Nenhuma chave de API externa ou segredo (`SERVER_SECRET`, `DATABASE_URL`, `*_WEBHOOK_SECRET`, `GEMINI_API_KEY`) é exposta ao frontend nem solicitada por UI — segredos residem exclusivamente no **Server Core** / Secret Manager ou no cofre criptografado `AES-256-GCM` (`integrations`).
+- **Separação Config vs Segredos:** Variáveis operacionais não secretas (limites de upload, origens CORS extras, webhook URL de e-mail, URL de releases, URLs Supabase e preços de planos) são resolvidas dinamicamente da governança do **HQ Central** (`runtimePolicy` / `releaseConfig` / `planPricing`) com fallback para `process.env`. Nenhuma chave de API externa ou segredo (`SERVER_SECRET`, `DATABASE_URL`, `SQL_PASSWORD`, `SUPABASE_SECRET_KEY`, `*_WEBHOOK_SECRET`, `GEMINI_API_KEY`) é exposta ao frontend nem solicitada por UI — segredos residem exclusivamente no **Server Core** / Secret Manager ou no cofre criptografado `AES-256-GCM` (`integrations`).
