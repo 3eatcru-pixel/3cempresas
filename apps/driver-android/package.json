@@ -1,0 +1,19 @@
+{
+  "name": "@3c/driver-android",
+  "version": "5.2.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:web": "npm --workspace=@3c/driver-web run build",
+    "cap:add-android": "cap add android",
+    "cap:sync": "npm run build:web && cap sync android",
+    "cap:open": "cap open android",
+    "cap:verify": "node -e \"import('fs').then(fs=>{if(!fs.existsSync('./android/gradlew'))console.warn('[android] Execute cap add android para gerar Gradle wrapper nativo.');process.exit(0);})\"",
+    "build:apk": "npm run cap:sync && cap build android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/browser": "^6.0.3",
+    "@capacitor/core": "^6.2.0"
+  }
+}

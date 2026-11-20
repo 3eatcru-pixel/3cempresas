@@ -1,0 +1,269 @@
+import type {
+  MarketplaceGovernanceConfig,
+  PlanPricingTier,
+  PlatformBillingPaymentConfig,
+  PlatformGovernance,
+  PlatformRuntimePolicy,
+  ReleaseDistributionConfig,
+  Store,
+} from '@3c/shared-types';
+
+/**
+ * Configuração padrão de recebimento de assinaturas SaaS dos lojistas (HQ Central).
+ * A chave PIX e links de checkout devem ser preenchidos pelo DEV_OWNER em HQ > Planos & Billing.
+ */
+export const DEFAULT_PLATFORM_BILLING_CONFIG: PlatformBillingPaymentConfig = {
+  pixEnabled: true,
+  pixKey: '',
+  pixKeyType: 'CNPJ',
+  beneficiaryName: '3C CORP SAAS',
+  beneficiaryCity: 'BRASIL',
+  beneficiaryDocument: '',
+  creditCardEnabled: true,
+  debitCardEnabled: true,
+  boletoEnabled: true,
+  bankTransferEnabled: true,
+  paymentLinkEnabled: true,
+  maxCreditInstallments: 12,
+  bankName: '',
+  bankAgency: '',
+  bankAccount: '',
+  bankAccountType: 'CORRENTE',
+  pspProvider: 'DIRECT_PIX',
+  checkoutBaseUrl: '',
+  billingSupportWhatsapp: '',
+  billingSupportEmail: 'financeiro@3ccorp.com.br',
+  paymentInstructions:
+    'Escolha o meio de pagamento de sua preferência e, após concluir, clique em "Registrar Pagamento" para vincular à sua loja. As novas cotas são liberadas após confirmação bancária ou via webhook PSP.',
+  gracePeriodDays: 5,
+  autoSuspendOverdue: false,
+  lateFeePercent: 2,
+  monthlyInterestPercent: 1,
+  sendDueReminderDaysBefore: 3,
+};
+
+export const DEFAULT_RELEASE_DISTRIBUTION_CONFIG: ReleaseDistributionConfig = {
+  releaseBaseUrl: '',
+  channel: 'stable',
+  minSupportedVersionOverride: '',
+  releaseNotesOverride: '',
+  disabledProducts: [],
+  artifactSignatures: {},
+};
+
+export const DEFAULT_PLATFORM_RUNTIME_POLICY: PlatformRuntimePolicy = {
+  storageMaxObjectBytes: 2 * 1024 * 1024,
+  storageTenantQuotaBytes: 50 * 1024 * 1024,
+  storageConsumerQuotaBytes: 10 * 1024 * 1024,
+  edgeAutoSyncMs: 15_000,
+  extraAllowedOrigins: [],
+  firebaseProjectIdOverride: '',
+  emailWebhookUrl: '',
+};
+
+export const DEFAULT_MARKETPLACE_GOVERNANCE_CONFIG: MarketplaceGovernanceConfig = {
+  marketplaceName: '3C Marketplace',
+  heroHeadline: '',
+  heroSubtitle: '',
+  recommendationsTitle: 'Recomendados para você',
+  featuredStoreIds: [],
+  hiddenStoreIds: [],
+  defaultDiscoveryRadiusKm: 25,
+  allowGuestBrowsing: true,
+  enabledVerticals: ['RESTAURANT', 'RETAIL', 'SERVICES', 'MULTI_COMMERCE'],
+  spotlightPricing: {
+    heroBannerMonthlyFee: 299,
+    recommendedSlotMonthlyFee: 149,
+    categoryTopMonthlyFee: 99,
+  },
+  sponsoredPlacements: [],
+  externalChannelConnectors: [
+    {
+      provider: 'IFOOD',
+      label: 'iFood Partner Hub',
+      enabled: true,
+      monthlyAddonFee: 79,
+      revenueSharePercent: 0,
+      syncCatalog: true,
+      syncOrders: true,
+    },
+    {
+      provider: 'UBER_EATS',
+      label: 'Uber Eats Direct & Orders',
+      enabled: true,
+      monthlyAddonFee: 79,
+      revenueSharePercent: 0,
+      syncCatalog: true,
+      syncOrders: true,
+    },
+    {
+      provider: 'DELIVEROO',
+      label: 'Deliveroo Hospitality API',
+      enabled: false,
+      monthlyAddonFee: 89,
+      revenueSharePercent: 0,
+      syncCatalog: true,
+      syncOrders: true,
+    },
+    {
+      provider: 'RAPPI',
+      label: 'Rappi Partners Sync',
+      enabled: false,
+      monthlyAddonFee: 69,
+      revenueSharePercent: 0,
+      syncCatalog: true,
+      syncOrders: true,
+    },
+    {
+      provider: 'NINETY_NINE_FOOD',
+      label: '99Food Connector',
+      enabled: false,
+      monthlyAddonFee: 59,
+      revenueSharePercent: 0,
+      syncCatalog: true,
+      syncOrders: true,
+    },
+  ],
+};
+
+/**
+ * Catálogo oficial de planos SaaS da plataforma 3C Corp (v5.2.2).
+ * Define cotas estruturais de filiais e terminais validadas pelo Server Core.
+ */
+export const SAAS_PLAN_TIERS: PlanPricingTier[] = [
+  {
+    tier: 'FREE',
+    name: 'Plano Free (7 Dias)',
+    badge: 'STARTER / DEGUSTAÇÃO',
+    maxBranches: 1,
+    maxDevices: 2,
+    description: 'Degustação completa por 7 dias com Store OS, Marketplace e 0% de comissão.',
+    allFeaturesIncluded: true,
+    monthlyPrice: 0,
+    quarterlyPrice: 0,
+    annualPrice: 0,
+  },
+  {
+    tier: 'PROMO',
+    name: 'Plano Promo (Micro)',
+    badge: 'PROMOCIONAL / ENTRADA',
+    maxBranches: 1,
+    maxDevices: 3,
+    description: 'Para operações individuais iniciando vendas online e PDV com até 3 terminais.',
+    allFeaturesIncluded: true,
+    monthlyPrice: 49.9,
+    quarterlyPrice: 44.91,
+    annualPrice: 37.43,
+  },
+  {
+    tier: 'BASIC',
+    name: 'Plano Basic',
+    badge: 'LOJA ÚNICA',
+    maxBranches: 1,
+    maxDevices: 5,
+    description: 'Loja única com Store OS completo, KDS, salão, mesas e até 5 terminais.',
+    allFeaturesIncluded: true,
+    monthlyPrice: 149,
+    quarterlyPrice: 134.1,
+    annualPrice: 111.75,
+  },
+  {
+    tier: 'PRO',
+    name: 'Plano Pro',
+    badge: 'MULTIFILIAIS & ESCALA',
+    maxBranches: 2,
+    maxDevices: 15,
+    description: 'Operação multiloja com até 2 filiais, estoque compartilhado e 15 terminais.',
+    allFeaturesIncluded: true,
+    monthlyPrice: 299,
+    quarterlyPrice: 269.1,
+    annualPrice: 224.25,
+  },
+  {
+    tier: 'ENTERPRISE',
+    name: 'Plano Enterprise',
+    badge: 'REDE & FRANQUIAS',
+    maxBranches: 5,
+    maxDevices: 999,
+    description: 'Franquias e redes com até 5 filiais, governança dedicada e terminais em rede.',
+    allFeaturesIncluded: true,
+    monthlyPrice: 499,
+    quarterlyPrice: 449.1,
+    annualPrice: 374.25,
+  },
+];
+
+/**
+ * Configuração padrão de governança global da plataforma HQ Central.
+ * Não contém registros comerciais nem dados simulados.
+ */
+export const DEFAULT_PLATFORM_GOVERNANCE: PlatformGovernance = {
+  totalGMV: 0,
+  totalSaaSRevenue: 0,
+  globalCommissionRate: 12,
+  activeStoresCount: 0,
+  activeCouriersCount: 0,
+  databaseStatus: 'CONNECTED',
+  serverCollections: [],
+  auditLogs: [],
+  featureFlags: {
+    aiEngineEnabled: true,
+    autoDispatchEnabled: true,
+    aiMenuAssistantEnabled: true,
+    dynamicSurgePricingEnabled: false,
+    waiterTableSelfServiceEnabled: true,
+    offlineSyncEngineEnabled: true,
+    marketplaceMaintenanceReadOnly: false,
+    firebaseEnabled: true,
+    firebaseAuthEnabled: true,
+    firebaseFirestoreEnabled: true,
+  },
+  planPricing: {
+    FREE: { monthlyPrice: 0, quarterlyPrice: 0, annualPrice: 0, maxDevices: 2, maxBranches: 1 },
+    PROMO: { monthlyPrice: 49.9, quarterlyPrice: 44.91, annualPrice: 37.43, maxDevices: 3, maxBranches: 1 },
+    BASIC: { monthlyPrice: 149, quarterlyPrice: 134.1, annualPrice: 111.75, maxDevices: 5, maxBranches: 1 },
+    PRO: { monthlyPrice: 299, quarterlyPrice: 269.1, annualPrice: 224.25, maxDevices: 15, maxBranches: 2 },
+    ENTERPRISE: { monthlyPrice: 499, quarterlyPrice: 449.1, annualPrice: 374.25, maxDevices: 999, maxBranches: 5 },
+  },
+  billingConfig: DEFAULT_PLATFORM_BILLING_CONFIG,
+  releaseConfig: DEFAULT_RELEASE_DISTRIBUTION_CONFIG,
+  marketplaceConfig: DEFAULT_MARKETPLACE_GOVERNANCE_CONFIG,
+  runtimePolicy: DEFAULT_PLATFORM_RUNTIME_POLICY,
+  defaultTrialDays: 7,
+  defaultPlatformDeliveryFee: 6.9,
+  maxConcurrentOrdersPerStore: 150,
+  globalAnnouncementBanner: '',
+  supportWhatsapp: '',
+  supportEmail: 'suporte@3ccorp.com.br',
+  customPlatformName: '3C Corp SaaS',
+  maintenanceMessage: 'Plataforma em manutenção programada. Voltamos em instantes.',
+};
+
+/**
+ * Placeholder estrutural tipado quando nenhuma loja está selecionada ou cadastrada no banco.
+ */
+export const EMPTY_STORE_PLACEHOLDER: Store = {
+  id: '',
+  tenantId: '',
+  name: 'Nenhuma loja ativa',
+  slug: '',
+  category: 'RESTAURANT',
+  rating: 5,
+  deliveryTimeMin: 30,
+  deliveryFee: 0,
+  minOrder: 0,
+  logo: '',
+  banner: '',
+  isOpen: false,
+  commissionRate: 0,
+  subscriptionPlan: 'FREE',
+  billingCycle: 'MONTHLY',
+  maxAllowedDevices: 2,
+  maxAllowedBranches: 1,
+  phone: '',
+  address: '',
+  totalOrders: 0,
+  monthlyRevenue: 0,
+  enabledModules: [],
+  operationalSettings: {},
+};

@@ -1,0 +1,10 @@
+{
+  "name": "@3c/waiter-web",
+  "version": "5.2.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 3104",
+    "build": "vite build"
+  }
+}

@@ -1,0 +1,16 @@
+[package]
+name = "store-os-desktop"
+version = "5.2.1"
+description = "3C Store OS — Tauri 2 Desktop Shell + 3C Edge Node Standard Sidecar"
+authors = ["3C Corp Engineering"]
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2.0", features = [] }
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tauri = { version = "2.0", features = [] }
+tauri-plugin-shell = "2.0"
+tauri-plugin-updater = "2.0"

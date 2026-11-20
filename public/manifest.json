@@ -1,0 +1,58 @@
+{
+  "id": "/",
+  "short_name": "3C Corp",
+  "name": "3C Corp — Store OS, Marketplace, Driver e Waiter",
+  "description": "Plataforma integrada de PDV, KDS, gestão comercial, marketplace e aplicativos móveis de entrega e atendimento.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#020617",
+  "theme_color": "#f59e0b",
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "3C Store OS",
+      "short_name": "Store OS",
+      "url": "/?app=store-os",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "3C Marketplace",
+      "short_name": "Market",
+      "url": "/?app=marketplace",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "3C Driver",
+      "short_name": "Driver",
+      "url": "/?app=driver",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "3C Waiter",
+      "short_name": "Waiter",
+      "url": "/?app=waiter",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}

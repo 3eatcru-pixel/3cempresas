@@ -1,0 +1,52 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "3C Store OS",
+  "version": "5.2.1",
+  "identifier": "com.threec.storeos",
+  "build": {
+    "beforeDevCommand": "npm --workspace=@3c/store-web run dev",
+    "devUrl": "http://localhost:3102",
+    "beforeBuildCommand": "npm --workspace=@3c/store-web run build",
+    "frontendDist": "../../store-web/dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "3C Store OS — PDV & Gestão Operacional",
+        "width": 1366,
+        "height": 840,
+        "minWidth": 1024,
+        "minHeight": 700,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; connect-src 'self' ipc: http://ipc.localhost http: https: ws: wss:; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["msi", "nsis", "deb", "appimage"],
+    "externalBin": ["binaries/3c-edge-node"],
+    "windows": {
+      "nsis": {
+        "installMode": "perMachine"
+      }
+    },
+    "linux": {
+      "deb": {
+        "depends": ["libwebkit2gtk-4.1-0", "libgtk-3-0"]
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://app-3ccorp-164281225843.us-west1.run.app/api/v1/system/releases/tauri/{{target}}/{{arch}}/{{current_version}}",
+        "https://app-3ccorp-2aj4z66sma-uw.a.run.app/api/v1/system/releases/tauri/{{target}}/{{arch}}/{{current_version}}",
+        "https://3ccorp.ai.studio/api/v1/system/releases/tauri/{{target}}/{{arch}}/{{current_version}}",
+        "https://3cruempresas.cloud.run/api/v1/system/releases/tauri/{{target}}/{{arch}}/{{current_version}}"
+      ]
+    }
+  }
+}

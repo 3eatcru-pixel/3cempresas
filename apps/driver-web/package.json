@@ -1,0 +1,10 @@
+{
+  "name": "@3c/driver-web",
+  "version": "5.2.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 3103",
+    "build": "vite build"
+  }
+}

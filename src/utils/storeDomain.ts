@@ -1,0 +1,32 @@
+/**
+ * 3C Corp SaaS — Legacy path facade for @3c/commerce-engine store domain rules
+ */
+export {
+  DINING_CATEGORIES,
+  SERVICE_CATEGORIES,
+  RETAIL_CATEGORIES,
+  type FulfillmentModality,
+  type ShowcaseTabId,
+  isMultiCommerceCategory,
+  isMultiCommerceStore,
+  isDiningCategory,
+  isServiceCategory,
+  isFoodOrBeverageCategory,
+  storeSupportsTableService,
+  getAllowedModalities,
+  getAllowedShowcaseTabs,
+  getStoreSocials,
+  isRetailCategory,
+  getStorePosMode,
+  getDefaultEnabledModulesForCategory,
+  isItemService,
+  getItemSegmentGroup,
+  getDefaultDevicesForPlan,
+  getStoreMaxDevices,
+  getDefaultBranchesForPlan,
+  getStoreMaxBranches,
+  getTenantStores,
+  hasReservationConflict,
+  computeTotalVariantStock,
+  calculateHaversineKm,
+} from '@3c/commerce-engine';

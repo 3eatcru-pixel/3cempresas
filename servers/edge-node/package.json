@@ -1,0 +1,10 @@
+{
+  "name": "@3c/edge-node",
+  "version": "5.2.1",
+  "private": true,
+  "type": "module",
+  "main": "./index.ts",
+  "scripts": {
+    "start": "tsx index.ts"
+  }
+}

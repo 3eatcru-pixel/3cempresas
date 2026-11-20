@@ -1,0 +1,15 @@
+{
+  "name": "@3c/store-desktop",
+  "version": "5.2.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:web": "npm --workspace=@3c/store-web run build",
+    "dev": "tauri dev",
+    "build": "npm run build:web && tauri build",
+    "build:windows": "npm run build:web && tauri build --target x86_64-pc-windows-msvc",
+    "build:linux": "npm run build:web && tauri build --target x86_64-unknown-linux-gnu",
+    "sidecar:prepare": "node ./scripts/prepare-sidecar.mjs",
+    "sidecar:prepare:strict": "node ./scripts/prepare-sidecar.mjs --require-native"
+  }
+}
