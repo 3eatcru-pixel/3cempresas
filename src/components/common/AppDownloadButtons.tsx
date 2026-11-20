@@ -5,7 +5,11 @@ import { apiClient } from '../../core/api/apiClient';
 import { useOptionalEcosystem } from '../../context/EcosystemContext';
 import { AuthModalContextId } from '../../context/AuthContext';
 import { BrandMark } from './BrandLogo';
-import { ReleaseDownloadInfo, ReleaseDownloadModal } from './ReleaseDownloadModal';
+import {
+  ReleaseDownloadInfo,
+  ReleaseDownloadModal,
+  triggerSafeReleaseDownload,
+} from './ReleaseDownloadModal';
 
 interface AppDownloadButtonsProps {
   variant?: 'compact' | 'panel';
@@ -73,13 +77,16 @@ export const AppDownloadButtons: React.FC<AppDownloadButtonsProps> = ({
     try {
       const info = await apiClient.getReleaseArtifactInfo({ appId, platform, format });
       if (info.available) {
-        const link = document.createElement('a');
-        link.href = info.downloadUrl;
-        link.download = info.fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        ecosystem?.showNotification(`Download iniciado: ${info.fileName}`);
+        const started = await triggerSafeReleaseDownload(info);
+        if (started) {
+          ecosystem?.showNotification(`Download iniciado: ${info.fileName}`);
+        } else {
+          setModalInfo({
+            ...info,
+            available: false,
+            source: 'UNPUBLISHED',
+          });
+        }
       } else {
         setModalInfo(info);
       }

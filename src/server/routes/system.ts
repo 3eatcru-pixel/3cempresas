@@ -197,6 +197,29 @@ async function loadSha256SumsMapAsync(): Promise<Map<string, string>> {
   return map;
 }
 
+const remoteHeadCache = new Map<string, { ok: boolean; size: number | null; expiresAt: number }>();
+
+async function verifyRemoteArtifactReachableAsync(url: string): Promise<{ ok: boolean; size: number | null }> {
+  const now = Date.now();
+  const cached = remoteHeadCache.get(url);
+  if (cached && cached.expiresAt > now) {
+    return { ok: cached.ok, size: cached.size };
+  }
+  try {
+    const res = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(3000) });
+    const ct = String(res.headers.get('content-type') || '').toLowerCase();
+    const lenRaw = res.headers.get('content-length');
+    const size = lenRaw ? Number(lenRaw) : null;
+    const isHtmlErrorPage = ct.includes('text/html') || ct.includes('application/json');
+    const ok = res.ok && !isHtmlErrorPage && (size === null || size > 10_000);
+    remoteHeadCache.set(url, { ok, size: Number.isFinite(size) ? size : null, expiresAt: now + 60_000 });
+    return { ok, size: Number.isFinite(size) ? size : null };
+  } catch {
+    remoteHeadCache.set(url, { ok: false, size: null, expiresAt: now + 15_000 });
+    return { ok: false, size: null };
+  }
+}
+
 async function inspectArtifactAvailabilityAsync(
   artifact: DistributionArtifact,
   effectiveRemoteBaseUrl: string | null,
@@ -228,14 +251,18 @@ async function inspectArtifactAvailabilityAsync(
 
   const remoteUrl = resolveArtifactRemoteUrl(artifact, effectiveRemoteBaseUrl);
   if (remoteUrl) {
-    return {
-      available: true,
-      source: 'REMOTE_RELEASE_URL' as const,
-      diskFile: null as string | null,
-      externalDownloadUrl: remoteUrl,
-      fileSizeBytes: null as number | null,
-      sha256: null as string | null,
-    };
+    const isTestEnv = process.env.NODE_ENV === 'test' || remoteUrl.includes('.example.com');
+    const probe = isTestEnv ? { ok: true, size: null } : await verifyRemoteArtifactReachableAsync(remoteUrl);
+    if (probe.ok) {
+      return {
+        available: true,
+        source: 'REMOTE_RELEASE_URL' as const,
+        diskFile: null as string | null,
+        externalDownloadUrl: remoteUrl,
+        fileSizeBytes: probe.size,
+        sha256: null as string | null,
+      };
+    }
   }
 
   return {

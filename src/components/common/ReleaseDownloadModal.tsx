@@ -62,6 +62,38 @@ const APP_ID_TO_BRAND: Record<string, BrandLogoId> = {
   'server-core': 'server-core',
 };
 
+export async function triggerSafeReleaseDownload(info: ReleaseDownloadInfo): Promise<boolean> {
+  const targetUrl = (info.externalDownloadUrl || info.downloadUrl || '').trim();
+  if (!targetUrl) return false;
+
+  const isExternal = /^https?:\/\//i.test(targetUrl);
+  if (!isExternal) {
+    try {
+      const headRes = await fetch(targetUrl, { method: 'HEAD', credentials: 'same-origin' });
+      const contentType = (headRes.headers.get('content-type') || '').toLowerCase();
+      const contentLength = Number(headRes.headers.get('content-length') || '0');
+      const isHtmlOrJson = contentType.includes('text/html') || contentType.includes('application/json');
+      const isTooSmall = Number.isFinite(contentLength) && contentLength > 0 && contentLength <= 10_000;
+      if (!headRes.ok || isHtmlOrJson || isTooSmall) {
+        return false;
+      }
+    } catch {
+      return false;
+    }
+  }
+
+  const link = document.createElement('a');
+  link.href = targetUrl;
+  link.download = info.fileName;
+  if (isExternal) {
+    link.rel = 'noopener noreferrer';
+  }
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  return true;
+}
+
 function formatFileSize(bytes?: number | null): string | null {
   if (!bytes || !Number.isFinite(bytes) || bytes <= 0) return null;
   if (bytes >= 1024 * 1024) {
@@ -102,14 +134,15 @@ export const ReleaseDownloadModal: React.FC<ReleaseDownloadModalProps> = ({
     }
   };
 
-  const handleDirectDownload = () => {
-    const link = document.createElement('a');
-    link.href = info.downloadUrl;
-    link.download = info.fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    ecosystem?.showNotification(`Download iniciado: ${info.fileName}`);
+  const handleDirectDownload = async () => {
+    const started = await triggerSafeReleaseDownload(info);
+    if (started) {
+      ecosystem?.showNotification(`Download iniciado: ${info.fileName}`);
+    } else {
+      ecosystem?.showNotification(
+        'O arquivo instalador não está disponível neste servidor. Use o bucket 3c-releases (RELEASE_BASE_URL) ou abra o app web.'
+      );
+    }
   };
 
   const handleInstallPwa = async () => {
@@ -303,7 +336,7 @@ export const ReleaseDownloadModal: React.FC<ReleaseDownloadModalProps> = ({
 
               <div className="mt-3 space-y-2.5 text-[11px] text-slate-400">
                 <p className="leading-relaxed">
-                  Gere e publique os pacotes Windows (<code className="text-slate-200">.exe</code>/<code className="text-slate-200">.msi</code>) e Android (<code className="text-slate-200">.apk</code>) usando os scripts do workspace e configure a URL base no HQ (<code className="text-slate-200">RELEASE_BASE_URL</code>) ou copie os arquivos em <code className="text-slate-200">public/releases/</code>.
+                  Gere e publique os pacotes Windows (<code className="text-slate-200">.exe</code>/<code className="text-slate-200">.msi</code>) e Android (<code className="text-slate-200">.apk</code>) usando os scripts do workspace e configure a URL base no HQ (<code className="text-slate-200">RELEASE_BASE_URL</code>, ex.: bucket Supabase <code className="text-slate-200">3c-releases</code>) ou mantenha os binários em <code className="text-slate-200">releases-dist/</code> no servidor local.
                 </p>
 
                 {info.buildCommand && (
