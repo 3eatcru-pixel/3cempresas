@@ -25,26 +25,32 @@ export const MarketplaceOrderTracking: React.FC<OrderTrackingProps> = ({
   const [savingVault, setSavingVault] = useState(false);
   const [vaultSaved, setVaultSaved] = useState(false);
   const [stripeConfigured, setStripeConfigured] = useState(false);
+  const [storeAllowsOnlinePayment, setStoreAllowsOnlinePayment] = useState(false);
   const [creatingPaymentLink, setCreatingPaymentLink] = useState(false);
   const [stripePayUrl, setStripePayUrl] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
-    apiClient
-      .getStripeConfig()
-      .then((cfg) => {
-        if (active) setStripeConfigured(Boolean(cfg?.configured));
-      })
-      .catch(() => {
-        if (active) setStripeConfigured(false);
-      });
+    Promise.all([
+      apiClient.getStripeConfig().catch(() => null),
+      order.storeId
+        ? fetch(`/api/v1/store/payment-public-info/${encodeURIComponent(order.storeId)}`)
+            .then((r) => (r.ok ? r.json() : null))
+            .catch(() => null)
+        : Promise.resolve(null),
+    ]).then(([cfg, payInfo]) => {
+      if (!active) return;
+      setStripeConfigured(Boolean(cfg?.configured));
+      setStoreAllowsOnlinePayment(Boolean(payInfo?.platformOnlinePaymentsEnabled === true));
+    });
     return () => {
       active = false;
     };
-  }, []);
+  }, [order.storeId]);
 
   const canPayOnlineNow =
     stripeConfigured &&
+    storeAllowsOnlinePayment &&
     order.paymentStatus !== 'PAID' &&
     order.status !== 'CANCELLED' &&
     order.paymentMethod !== 'CASH' &&

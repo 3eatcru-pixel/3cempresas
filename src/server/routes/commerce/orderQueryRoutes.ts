@@ -37,7 +37,12 @@ router.get('/orders', verifyAutonomousToken, async (req, res) => {
     const authenticatedUser = (req as any).user;
     const isConsumer = authenticatedUser.role === 'CUSTOMER' || authenticatedUser.role === 'CONSUMER';
     const snap = isConsumer
-      ? await runWithSystemDbContext('CONSUMER_ORDERS_LIST', () => db.collection('orders').get())
+      ? await runWithSystemDbContext('CONSUMER_ORDERS_LIST', () =>
+          db.collection('orders').query({
+            customerId: authenticatedUser.uid,
+            ...(storeId ? { storeId: String(storeId) } : {}),
+          })
+        )
       : await db.collection('orders').get();
     let orders = snap.docs.map((d) => d.data()).filter((o) => o && !o._deleted);
 

@@ -48,6 +48,11 @@ export class EdgeNodeRuntime {
   private buildExpressApp(): express.Express {
     const app = express();
     app.disable('x-powered-by');
+    app.use((_req, res, next) => {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('X-Frame-Options', 'DENY');
+      next();
+    });
     app.use((req, res, next) => {
       const origin = req.headers.origin;
       const allowlist = resolveEdgeCorsAllowlist(this.config.allowedOrigins);
@@ -206,4 +211,21 @@ if (isDirectEntry) {
       runtime.startAutoSync(cloudBaseUrl, cloudToken);
     }
   });
+
+  let shuttingDown = false;
+  const handleShutdown = async (signal: string) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`[3C Edge Node Standard] Recebido ${signal}. Encerrando HTTP e SQLite WAL...`);
+    const forceTimer = setTimeout(() => process.exit(1), 8000);
+    forceTimer.unref();
+    try {
+      await runtime.close();
+    } finally {
+      clearTimeout(forceTimer);
+      process.exit(0);
+    }
+  };
+  process.once('SIGTERM', () => void handleShutdown('SIGTERM'));
+  process.once('SIGINT', () => void handleShutdown('SIGINT'));
 }

@@ -93,16 +93,19 @@ router.post('/orders', verifyAutonomousToken, async (req, res) => {
   try {
     const preflight = await runWithSystemDbContext('ORDER_CREATE_PREFLIGHT', async () => {
       const storeSnap = await db.collection('stores').doc(storeId).get();
-      if (!storeSnap.exists) {
-        return { found: false as const, tenantId: null as string | null, govReadOnly: false };
+      if (!storeSnap.exists || storeSnap.data()?._deleted) {
+        return { found: false as const, tenantId: null as string | null, govReadOnly: false, isHiddenInMarketplace: false };
       }
       const sData = storeSnap.data() || {};
       const resolvedTenantId = String(sData.tenantId || authenticatedUser?.tenantId || 'tenant-1');
       const govSnap = await db.collection('governance').doc('governance').get();
-      const govReadOnly = Boolean(
-        govSnap.exists && govSnap.data()?.featureFlags?.marketplaceMaintenanceReadOnly === true
-      );
-      return { found: true as const, tenantId: resolvedTenantId, govReadOnly };
+      const govData = govSnap.exists ? govSnap.data() : null;
+      const govReadOnly = Boolean(govData?.featureFlags?.marketplaceMaintenanceReadOnly === true);
+      const hiddenStoreIds: string[] = Array.isArray(govData?.marketplaceConfig?.hiddenStoreIds)
+        ? govData.marketplaceConfig.hiddenStoreIds.map((id: any) => String(id))
+        : [];
+      const isHiddenInMarketplace = hiddenStoreIds.includes(storeId);
+      return { found: true as const, tenantId: resolvedTenantId, govReadOnly, isHiddenInMarketplace };
     });
 
     if (!preflight.found) {
@@ -115,7 +118,7 @@ router.post('/orders', verifyAutonomousToken, async (req, res) => {
       const storeRef = db.collection('stores').doc(storeId);
       const storeSnap = await transaction.get(storeRef);
 
-      if (!storeSnap.exists) {
+      if (!storeSnap.exists || storeSnap.data()?._deleted) {
         throw new Error(`Loja '${storeId}' não encontrada no sistema.`);
       }
 
@@ -184,6 +187,11 @@ router.post('/orders', verifyAutonomousToken, async (req, res) => {
         }
         if (isInternalStaffChannel) {
           throw new Error('Acesso negado: Canal operacional interno restrito à equipe da loja.');
+        }
+        if (normalizedChannel === 'MARKETPLACE' && preflight.isHiddenInMarketplace) {
+          const hiddenErr = new Error('Estabelecimento indisponível no Marketplace.');
+          (hiddenErr as any).statusCode = 403;
+          throw hiddenErr;
         }
         if (storeData.isOpen === false) {
           throw new Error(`Estabelecimento '${storeData.name || storeId}' encontra-se fechado no momento.`);

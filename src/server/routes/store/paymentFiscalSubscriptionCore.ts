@@ -172,6 +172,9 @@ router.get('/payment-public-info/:storeId', async (req, res) => {
         : Array.isArray(cfg?.acceptedPaymentMethods) && cfg.acceptedPaymentMethods.length > 0
         ? cfg.acceptedPaymentMethods
         : [...ALL_STORE_PAYMENT_METHODS];
+    const isFreePlan =
+      String(storeData.subscriptionPlan || 'FREE').trim().toUpperCase() === 'FREE' ||
+      String(storeData.saasPaymentStatus || '').trim().toUpperCase() === 'TRIAL';
     return {
       status: 200 as const,
       body: {
@@ -182,6 +185,9 @@ router.get('/payment-public-info/:storeId', async (req, res) => {
         acceptsCard: acceptedPaymentMethods.includes('CREDIT_CARD') || acceptedPaymentMethods.includes('DEBIT_CARD'),
         acceptsCash: acceptedPaymentMethods.includes('CASH'),
         acceptedPaymentMethods,
+        isFreePlan,
+        platformOnlinePaymentsEnabled: !isFreePlan,
+        paymentMode: isFreePlan ? 'MANUAL_AND_EXTERNAL_TERMINAL_ONLY' : 'PLATFORM_ONLINE_AND_MANUAL',
       },
     };
   });

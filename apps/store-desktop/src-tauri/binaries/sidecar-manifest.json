@@ -7,8 +7,8 @@
   "expectedNativeBinary": "src-tauri\\binaries\\3c-edge-node-x86_64-pc-windows-msvc.exe",
   "buildCommand": "npm --workspace=@3c/store-desktop run sidecar:prepare:strict",
   "sources": {
-    "edgeEntrySha256": "0c07002191ede370bf6050771de3ca5232db25105972afb730a940bfbe1609e1",
+    "edgeEntrySha256": "06c97c430bf79dbba6e7cfc30ac23fadfb37c51089c58ba1b35fefb111a76c60",
     "sqliteDriverSha256": "5a0237bf01968a04fbfa49fd9b69e5dbe2c439c6e222ac407390b3e15b76880c"
   },
-  "generatedAt": "2026-11-20T17:39:58.372Z"
+  "generatedAt": "2026-11-20T18:17:44.441Z"
 }

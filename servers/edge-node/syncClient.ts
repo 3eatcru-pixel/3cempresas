@@ -39,6 +39,20 @@ export interface EdgeSyncReport {
   syncState?: EdgeSyncState;
 }
 
+const EDGE_CLOUD_FETCH_TIMEOUT_MS = Math.max(
+  3000,
+  Number(process.env.EDGE_CLOUD_FETCH_TIMEOUT_MS || 15000)
+);
+const OUTBOX_PRUNE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const OUTBOX_PRUNE_KEEP_MAX = 1000;
+
+function fetchCloudWithTimeout(url: string, init: RequestInit = {}): Promise<Response> {
+  return fetch(url, {
+    ...init,
+    signal: init.signal || AbortSignal.timeout(EDGE_CLOUD_FETCH_TIMEOUT_MS),
+  });
+}
+
 export class EdgeSyncClient {
   public lastPullHlc = '';
   public lastCloudSyncAt: string | null = null;
@@ -157,7 +171,7 @@ export class EdgeSyncClient {
     hostname?: string
   ): Promise<{ edgeToken: string; edgeTokenExpiresAt: string }> {
     const cleanCloud = assertSecureCloudUrl(cloudBaseUrl);
-    const resp = await fetch(`${cleanCloud}/api/v1/sync/edge/register`, {
+    const resp = await fetchCloudWithTimeout(`${cleanCloud}/api/v1/sync/edge/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -182,7 +196,7 @@ export class EdgeSyncClient {
   private async tryRefreshEdgeToken(cloudBaseUrl: string, currentToken: string): Promise<string | null> {
     if (!currentToken.startsWith('edg-tok:')) return null;
     const cleanCloud = assertSecureCloudUrl(cloudBaseUrl);
-    const resp = await fetch(`${cleanCloud}/api/v1/sync/edge/token/refresh`, {
+    const resp = await fetchCloudWithTimeout(`${cleanCloud}/api/v1/sync/edge/token/refresh`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -208,7 +222,7 @@ export class EdgeSyncClient {
       const cleanCloud = assertSecureCloudUrl(cloudBaseUrl);
       const tokenToUse =
         this.activeEdgeToken && bearerToken.startsWith('edg-tok:') ? this.activeEdgeToken : bearerToken;
-      const resp = await fetch(`${cleanCloud}/api/v1/sync/edge/bootstrap/${encodeURIComponent(this.storeId)}`, {
+      const resp = await fetchCloudWithTimeout(`${cleanCloud}/api/v1/sync/edge/bootstrap/${encodeURIComponent(this.storeId)}`, {
         headers: {
           Authorization: `Bearer ${tokenToUse}`,
           'X-3C-App-Id': 'server-core',
@@ -274,7 +288,7 @@ export class EdgeSyncClient {
       }
 
       const fetchWithTokenRefresh = async (url: string, init: RequestInit): Promise<Response> => {
-        const first = await fetch(url, {
+        const first = await fetchCloudWithTimeout(url, {
           ...init,
           headers: { ...(init.headers || {}), Authorization: `Bearer ${activeToken}` },
         });
@@ -282,7 +296,7 @@ export class EdgeSyncClient {
           const refreshed = await this.tryRefreshEdgeToken(cleanCloud, activeToken).catch(() => null);
           if (refreshed) {
             activeToken = refreshed;
-            return fetch(url, {
+            return fetchCloudWithTimeout(url, {
               ...init,
               headers: { ...(init.headers || {}), Authorization: `Bearer ${activeToken}` },
             });
@@ -456,6 +470,7 @@ export class EdgeSyncClient {
         this.lastCloudSyncAt = syncDoneIso;
         this.lastFullSyncAt = syncDoneIso;
         this.syncState = conflictCount > 0 ? 'DEGRADED' : 'OK';
+        await this.pruneSyncedOutboxEntries(refreshedOutbox).catch(() => {});
       }
 
       await this.persistCursorMetadata();
@@ -510,6 +525,25 @@ export class EdgeSyncClient {
         console.warn(`[3C Edge Node Standard] Auto-sync falhou (${this.storeId}): ${err?.message || err}`);
       });
     }, safeInterval);
+  }
+
+  private async pruneSyncedOutboxEntries(allOutbox: any[]): Promise<void> {
+    const cutoffMs = Date.now() - OUTBOX_PRUNE_MAX_AGE_MS;
+    const syncedClean = allOutbox
+      .filter((o) => o && o.id && o.syncedToCloudAt && !o.syncError)
+      .sort((a, b) => Date.parse(String(b.syncedToCloudAt || 0)) - Date.parse(String(a.syncedToCloudAt || 0)));
+
+    const toDelete: string[] = [];
+    for (let i = 0; i < syncedClean.length; i++) {
+      const entry = syncedClean[i];
+      const ts = Date.parse(String(entry.syncedToCloudAt));
+      if (i >= OUTBOX_PRUNE_KEEP_MAX || (Number.isFinite(ts) && ts < cutoffMs)) {
+        toDelete.push(entry.id);
+      }
+    }
+    for (const id of toDelete) {
+      await this.driver.deleteDoc('sync_outbox', id);
+    }
   }
 
   stopAutoSync(): void {

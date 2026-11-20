@@ -234,6 +234,8 @@ export interface PlatformGovernance {
     waiterTableSelfServiceEnabled: boolean;
     offlineSyncEngineEnabled: boolean;
     marketplaceMaintenanceReadOnly?: boolean;
+    /** Comissão percentual sobre vendas só é aplicada quando a frota de motoristas da plataforma estiver liberada e ativa. */
+    platformFleetCommissionEnabled?: boolean;
     firebaseEnabled?: boolean;
     firebaseFcmEnabled?: boolean;
     firebaseAnalyticsEnabled?: boolean;

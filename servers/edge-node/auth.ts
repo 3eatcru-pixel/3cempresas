@@ -133,14 +133,14 @@ export async function verifyEdgeTokenAndUser(
     return resolveEdgeWaiterDevice(driver, storeId, tenantId, decoded);
   }
 
-  const localUsers = await driver.listDocs<any>('users');
+  const localUsersCount = driver.getCollectionSize('users');
   const localUser = await driver.getDoc<any>('users', decoded.uid);
 
-  if (localUsers.length === 0 && decoded.role !== 'DEV_OWNER') {
+  if (localUsersCount === 0 && decoded.role !== 'DEV_OWNER') {
     throw authError('Edge Node aguardando sincronização inicial de usuários do Server Core.', 503);
   }
 
-  if (localUsers.length > 0 && !localUser && decoded.role !== 'DEV_OWNER') {
+  if (localUsersCount > 0 && !localUser && decoded.role !== 'DEV_OWNER') {
     throw authError('Usuário não autorizado ou revogado neste Edge Node.', 401);
   }
 

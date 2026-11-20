@@ -226,7 +226,21 @@ export function registerEdgeOrderPaymentAndSyncRoutes(app: express.Express, ctx:
     requireEdgeRoles(['DEV_OWNER', 'SUPER_ADMIN', 'REGIONAL_MANAGER', 'STORE_OWNER', 'STORE_MANAGER', 'CASHIER']),
     async (req, res) => {
       try {
-        const cloudUrl = req.body?.cloudBaseUrl || config.cloudBaseUrl;
+        const callerRole = String((req as any).user?.role || '').toUpperCase();
+        const requestedCloudUrl =
+          typeof req.body?.cloudBaseUrl === 'string' ? req.body.cloudBaseUrl.trim() : '';
+        const configuredCloudUrl = String(config.cloudBaseUrl || '').trim();
+        if (
+          requestedCloudUrl &&
+          configuredCloudUrl &&
+          requestedCloudUrl.replace(/\/+$/, '') !== configuredCloudUrl.replace(/\/+$/, '') &&
+          callerRole !== 'DEV_OWNER'
+        ) {
+          return res.status(403).json({
+            error: 'Acesso negado: Apenas DEV_OWNER pode sobrescrever a URL da Cloud configurada no Edge Node.',
+          });
+        }
+        const cloudUrl = configuredCloudUrl || (callerRole === 'DEV_OWNER' ? requestedCloudUrl : '');
         if (!cloudUrl) {
           return res.status(400).json({ error: 'cloudBaseUrl não configurado.' });
         }

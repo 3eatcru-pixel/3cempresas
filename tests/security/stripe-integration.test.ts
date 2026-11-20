@@ -194,6 +194,60 @@ async function main() {
         store: { ...connectStore, stripeConnectChargesEnabled: false },
       });
       assert.equal(unverifiedSplit.destinationAccountId, null);
+
+      // Subscription-only model: 0% commission when platform fleet commission is disabled or STORE_FLEET
+      const subOnlySplit = computeOrderConnectSplit({
+        amountMinor: 10_000,
+        channel: 'MARKETPLACE',
+        deliveryModality: 'PLATFORM_FLEET',
+        store: connectStore,
+        globalCommissionRate: 12,
+        platformFleetCommissionEnabled: false,
+      });
+      assert.equal(subOnlySplit.destinationAccountId, 'acct_test_12345');
+      assert.equal(subOnlySplit.applicationFeeAmount, 0);
+
+      const storeFleetSplit = computeOrderConnectSplit({
+        amountMinor: 10_000,
+        channel: 'MARKETPLACE',
+        deliveryModality: 'STORE_FLEET',
+        store: connectStore,
+        globalCommissionRate: 12,
+        platformFleetCommissionEnabled: true,
+      });
+      assert.equal(storeFleetSplit.applicationFeeAmount, 0);
+    });
+
+    await check('4b. FREE / 7-day trial stores are blocked (HTTP 403) from Stripe online card payments, Connect & Invoicing', async () => {
+      // store1Id was created via signup -> subscriptionPlan='FREE', saasPaymentStatus='TRIAL'
+      const payInfoRes = await fetch(`${baseUrl}/store/payment-public-info/${store1Id}`);
+      assert.equal(payInfoRes.status, 200);
+      const payInfo = await payInfoRes.json();
+      assert.equal(payInfo.isFreePlan, true);
+      assert.equal(payInfo.platformOnlinePaymentsEnabled, false);
+      assert.equal(payInfo.paymentMode, 'MANUAL_AND_EXTERNAL_TERMINAL_ONLY');
+
+      const rConnect = await fetch(`${baseUrl}/stripe/connect/account`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${owner1Token}`,
+          'x-3c-app-id': 'store-os',
+        },
+        body: JSON.stringify({ storeId: store1Id }),
+      });
+      assert.equal(rConnect.status, 403);
+
+      const rInvoice = await fetch(`${baseUrl}/stripe/invoices`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${owner1Token}`,
+          'x-3c-app-id': 'store-os',
+        },
+        body: JSON.stringify({ storeId: store1Id, amount: 50 }),
+      });
+      assert.equal(rInvoice.status, 403);
     });
 
     await runWithSystemDbContext('STRIPE_TEST_ORDER_SEED', () =>

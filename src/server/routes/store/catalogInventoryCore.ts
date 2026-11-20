@@ -32,12 +32,19 @@ router.get('/menu', async (req, res) => {
     const { storeId, tenantId } = req.query;
     const { user: callerUser } = await resolveOptionalUser(req);
 
-    const [snap, storesSnap, tenantsSnap] = await runWithSystemDbContext('PUBLIC_STORE_MENU', () =>
+    const [snap, storesSnap, tenantsSnap, govSnap] = await runWithSystemDbContext('PUBLIC_STORE_MENU', () =>
       Promise.all([
         db.collection('menu_items').get(),
         db.collection('stores').get(),
         db.collection('tenants').get(),
+        db.collection('governance').doc('governance').get(),
       ])
+    );
+
+    const hiddenStoreIds = new Set<string>(
+      Array.isArray(govSnap.data()?.marketplaceConfig?.hiddenStoreIds)
+        ? govSnap.data()!.marketplaceConfig.hiddenStoreIds.map((id: any) => String(id))
+        : []
     );
 
     const suspendedTenants = new Set(
@@ -55,6 +62,9 @@ router.get('/menu', async (req, res) => {
     });
 
     const isAdminViewer = Boolean(callerUser && ['DEV_OWNER', 'SUPER_ADMIN'].includes(callerUser.role));
+    const isStaffViewer = Boolean(
+      callerUser && ['STORE_OWNER', 'STORE_MANAGER', 'REGIONAL_MANAGER', 'CASHIER', 'KITCHEN_STAFF', 'WAITER'].includes(callerUser.role)
+    );
 
     let items = snap.docs.map(d => d.data()).filter(i => i && !i._deleted);
     if (storeId) items = items.filter(i => i.storeId === storeId);
@@ -64,6 +74,9 @@ router.get('/menu', async (req, res) => {
       items = items.filter(item => {
         const store = item.storeId ? activeStoresById.get(item.storeId) : undefined;
         if (item.storeId && !store) return false;
+        if (!isStaffViewer && item.storeId && hiddenStoreIds.has(String(item.storeId))) {
+          return false;
+        }
         if (store && String(store.status || 'ACTIVE').toUpperCase() === 'SUSPENDED') {
           return false;
         }
@@ -126,7 +139,7 @@ router.post('/menu', verifyAutonomousToken, requireRoles(['REGIONAL_MANAGER', 'S
       const targetStoreId = rawItem.storeId || existingSnap.data()?.storeId || authenticatedUser.storeId;
       if (targetStoreId && authenticatedUser.role !== 'DEV_OWNER') {
         const storeSnap = await transaction.get(db.collection('stores').doc(String(targetStoreId)));
-        if (!storeSnap.exists) {
+        if (!storeSnap.exists || storeSnap.data()?._deleted) {
           const err: any = new Error(`Loja '${targetStoreId}' não encontrada.`);
           err.statusCode = 404;
           throw err;
@@ -349,7 +362,7 @@ router.post('/inventory', verifyAutonomousToken, requireRoles(['REGIONAL_MANAGER
       const targetStoreId = rawBatch.storeId || existingSnap.data()?.storeId || authenticatedUser.storeId;
       if (targetStoreId && authenticatedUser.role !== 'DEV_OWNER') {
         const storeSnap = await transaction.get(db.collection('stores').doc(String(targetStoreId)));
-        if (!storeSnap.exists) {
+        if (!storeSnap.exists || storeSnap.data()?._deleted) {
           const err: any = new Error(`Loja '${targetStoreId}' não encontrada.`);
           err.statusCode = 404;
           throw err;

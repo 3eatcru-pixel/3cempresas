@@ -98,7 +98,7 @@ router.post('/finance', verifyAutonomousToken, requireRoles(['REGIONAL_MANAGER',
       const targetStoreId = rawRecord.storeId || existingSnap.data()?.storeId || authenticatedUser.storeId;
       if (targetStoreId && authenticatedUser.role !== 'DEV_OWNER') {
         const storeSnap = await transaction.get(db.collection('stores').doc(String(targetStoreId)));
-        if (!storeSnap.exists) {
+        if (!storeSnap.exists || storeSnap.data()?._deleted) {
           const err: any = new Error(`Loja '${targetStoreId}' não encontrada.`);
           err.statusCode = 404;
           throw err;
@@ -182,7 +182,7 @@ router.get('/cash/session', verifyAutonomousToken, requireRoles(['REGIONAL_MANAG
 
 router.post('/cash/session', verifyAutonomousToken, requireRoles(['REGIONAL_MANAGER', 'STORE_OWNER', 'STORE_MANAGER', 'CASHIER']), requireModuleAccess('cash', 'pos'), async (req, res) => {
   try {
-    const rawSession = req.body || {};
+    const rawSession = stripPrototypePollution(req.body || {});
     const authenticatedUser = (req as any).user as AuthenticatedRequestUser;
     const id = rawSession.id || generateStandardId('cas');
 
@@ -252,9 +252,15 @@ router.post('/cash/session', verifyAutonomousToken, requireRoles(['REGIONAL_MANA
       const tenantId = authenticatedUser.role === 'DEV_OWNER'
         ? (rawSession.tenantId || existing?.tenantId || authenticatedUser.tenantId)
         : authenticatedUser.tenantId;
+      const protectedExistingCashFields =
+        existing && authenticatedUser.role !== 'DEV_OWNER'
+          ? ['initialCash', 'totalSales', 'totalSangrias', 'totalSuprimentos', 'finalCashCalculated']
+          : [];
       const cleanSession = omitKeys(
         rawSession,
-        authenticatedUser.role === 'DEV_OWNER' ? ['id'] : ['id', 'tenantId', ...(isSingleBranchLocked(authenticatedUser) ? ['storeId'] : [])]
+        authenticatedUser.role === 'DEV_OWNER'
+          ? ['id']
+          : ['id', 'tenantId', ...(isSingleBranchLocked(authenticatedUser) ? ['storeId'] : []), ...protectedExistingCashFields]
       );
       const cashHlc = generateHlcTimestamp('cloud_core');
       const nextDoc = {

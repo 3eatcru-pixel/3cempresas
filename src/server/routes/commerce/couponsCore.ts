@@ -117,6 +117,52 @@ router.get('/coupons', async (req, res) => {
       });
     }
 
+    if (!isMerchantAdmin) {
+      const { suspendedTenants, activeStoreIds, hiddenStoreIds } = await runWithSystemDbContext(
+        'PUBLIC_COUPONS_CATALOG_CONTEXT',
+        async () => {
+          const [tenantsSnap, storesSnap, govSnap] = await Promise.all([
+            db.collection('tenants').get(),
+            db.collection('stores').get(),
+            db.collection('governance').doc('governance').get(),
+          ]);
+          const suspended = new Set<string>();
+          for (const t of tenantsSnap.docs) {
+            const td = t.data();
+            if (td?._deleted || String(td?.status || 'ACTIVE').toUpperCase() === 'SUSPENDED') {
+              suspended.add(t.id);
+            }
+          }
+          const hidden = new Set<string>(
+            Array.isArray(govSnap.data()?.marketplaceConfig?.hiddenStoreIds)
+              ? govSnap.data()!.marketplaceConfig.hiddenStoreIds.map((id: any) => String(id))
+              : []
+          );
+          const active = new Set<string>();
+          for (const s of storesSnap.docs) {
+            const sd = s.data();
+            if (
+              sd &&
+              !sd._deleted &&
+              String(sd.status || 'ACTIVE').toUpperCase() !== 'SUSPENDED' &&
+              !suspended.has(String(sd.tenantId || '')) &&
+              !hidden.has(s.id)
+            ) {
+              active.add(s.id);
+            }
+          }
+          return { suspendedTenants: suspended, activeStoreIds: active, hiddenStoreIds: hidden };
+        }
+      );
+      coupons = coupons.filter((c) => {
+        if (c.tenantId && suspendedTenants.has(String(c.tenantId))) return false;
+        if (c.storeId && (!activeStoreIds.has(String(c.storeId)) || hiddenStoreIds.has(String(c.storeId)))) {
+          return false;
+        }
+        return true;
+      });
+    }
+
     if (storeId) {
       const storeSnap = await runWithSystemDbContext('PUBLIC_COUPONS_STORE_LOOKUP', () =>
         db.collection('stores').doc(String(storeId)).get()

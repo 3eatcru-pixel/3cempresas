@@ -8,6 +8,7 @@ import {
 import {
   createOrderCheckoutSession,
   createOrderPaymentIntent,
+  isStoreFreeOrTrialPlan,
   normalizeSafeRedirectUrl,
 } from '../../services/stripeService.ts';
 
@@ -17,7 +18,13 @@ async function loadAuthorizedOrderContext(
   orderId: string,
   user: AuthenticatedRequestUser
 ): Promise<
-  | { ok: true; order: Record<string, any>; store: Record<string, any>; globalCommissionRate: number }
+  | {
+      ok: true;
+      order: Record<string, any>;
+      store: Record<string, any>;
+      globalCommissionRate: number;
+      platformFleetCommissionEnabled: boolean;
+    }
   | { ok: false; status: number; error: string }
 > {
   const orderSnap = await runWithSystemDbContext('STRIPE_ORDER_LOAD', () =>
@@ -56,9 +63,19 @@ async function loadAuthorizedOrderContext(
     ])
   );
   const store = storeSnap.exists ? { id: storeSnap.id, ...(storeSnap.data() || {}) } : { id: order.storeId };
-  const globalCommissionRate = Number(govSnap.exists ? govSnap.data()?.globalCommissionRate ?? 12 : 12);
+  if (user.role !== 'DEV_OWNER' && isStoreFreeOrTrialPlan(store)) {
+    return {
+      ok: false,
+      status: 403,
+      error:
+        'Pagamentos online pela plataforma (Stripe/cartão) não estão disponíveis para lojas no Plano Free (7 dias grátis). Utilize PIX direto da loja ou pagamento manual/maquininha externa.',
+    };
+  }
+  const govData = govSnap.exists ? govSnap.data() || {} : {};
+  const globalCommissionRate = Number(govData?.globalCommissionRate ?? 0);
+  const platformFleetCommissionEnabled = Boolean(govData?.featureFlags?.platformFleetCommissionEnabled === true);
 
-  return { ok: true, order, store, globalCommissionRate };
+  return { ok: true, order, store, globalCommissionRate, platformFleetCommissionEnabled };
 }
 
 router.post('/payments/intent', verifyAutonomousToken, async (req, res) => {
@@ -78,6 +95,7 @@ router.post('/payments/intent', verifyAutonomousToken, async (req, res) => {
       order: ctx.order,
       store: ctx.store,
       globalCommissionRate: ctx.globalCommissionRate,
+      platformFleetCommissionEnabled: ctx.platformFleetCommissionEnabled,
       customerEmail: user.email,
     });
     return res.json({ success: true, orderId, ...intent });
@@ -114,6 +132,7 @@ router.post('/payments/checkout-session', verifyAutonomousToken, async (req, res
       order: ctx.order,
       store: ctx.store,
       globalCommissionRate: ctx.globalCommissionRate,
+      platformFleetCommissionEnabled: ctx.platformFleetCommissionEnabled,
       customerEmail: user.email,
       successUrl,
       cancelUrl,

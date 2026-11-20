@@ -10,10 +10,14 @@ import {
   createAndFinalizeInvoice,
   createConnectOnboardingLink,
   createOrGetConnectAccount,
+  isStoreFreeOrTrialPlan,
   listStoreInvoices,
   normalizeSafeRedirectUrl,
   syncConnectAccountStatus,
 } from '../../services/stripeService.ts';
+
+const FREE_PLAN_STRIPE_BLOCK_MESSAGE =
+  'Stripe Connect e cobrança por cartão pela plataforma estão disponíveis apenas nos planos pagos (Promo, Basic, Pro ou Enterprise). No Plano Free (7 dias grátis), utilize PIX direto da loja ou pagamento manual/maquininha externa.';
 
 const router = express.Router();
 
@@ -31,6 +35,9 @@ router.post(
       const check = await verifyStoreTenantAccess(storeId, user);
       if (check.ok === false) {
         return res.status(check.status).json({ error: check.error });
+      }
+      if (user.role !== 'DEV_OWNER' && isStoreFreeOrTrialPlan(check.store)) {
+        return res.status(403).json({ error: FREE_PLAN_STRIPE_BLOCK_MESSAGE });
       }
       const result = await createOrGetConnectAccount(
         { id: storeId, ...(check.store || {}) },
@@ -59,6 +66,9 @@ router.post(
       const check = await verifyStoreTenantAccess(storeId, user);
       if (check.ok === false) {
         return res.status(check.status).json({ error: check.error });
+      }
+      if (user.role !== 'DEV_OWNER' && isStoreFreeOrTrialPlan(check.store)) {
+        return res.status(403).json({ error: FREE_PLAN_STRIPE_BLOCK_MESSAGE });
       }
       const ensured = await createOrGetConnectAccount(
         { id: storeId, ...(check.store || {}) },
@@ -132,6 +142,9 @@ router.post(
       const check = await verifyStoreTenantAccess(storeId, user);
       if (check.ok === false) {
         return res.status(check.status).json({ error: check.error });
+      }
+      if (user.role !== 'DEV_OWNER' && isStoreFreeOrTrialPlan(check.store)) {
+        return res.status(403).json({ error: FREE_PLAN_STRIPE_BLOCK_MESSAGE });
       }
       const amountBrl = Number(req.body?.amount);
       if (!Number.isFinite(amountBrl) || amountBrl < 1) {

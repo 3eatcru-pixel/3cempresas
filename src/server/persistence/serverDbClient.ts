@@ -50,6 +50,7 @@ export interface CloudSyncDriverHandle {
     filter: {
       storeId?: string;
       tenantId?: string;
+      customerId?: string;
       status?: string;
       sinceHlc?: string;
       limit?: number;
@@ -268,6 +269,7 @@ export function createServerDbFacade(deps: {
     async query(filter: {
       storeId?: string;
       tenantId?: string;
+      customerId?: string;
       status?: string;
       sinceHlc?: string;
       limit?: number;
@@ -289,6 +291,7 @@ export function createServerDbFacade(deps: {
       let list = Array.from(table.entries());
       if (filter.tenantId) list = list.filter(([, v]) => v?.tenantId === filter.tenantId);
       if (filter.storeId) list = list.filter(([, v]) => v?.storeId === filter.storeId);
+      if (filter.customerId) list = list.filter(([, v]) => v?.customerId === filter.customerId);
       if (filter.status) list = list.filter(([, v]) => v?.status === filter.status);
       if (filter.sinceHlc) {
         list = list

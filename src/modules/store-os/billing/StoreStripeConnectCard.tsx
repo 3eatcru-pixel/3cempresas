@@ -13,6 +13,9 @@ export const StoreStripeConnectCard: React.FC<StoreStripeConnectCardProps> = ({
   currentStore,
   onNotify,
 }) => {
+  const isFreeOrTrial =
+    String(currentStore.subscriptionPlan || 'FREE').toUpperCase() === 'FREE' ||
+    String(currentStore.saasPaymentStatus || '').toUpperCase() === 'TRIAL';
   const { getIdToken } = useAuth();
   const [connectStatus, setConnectStatus] = useState<{
     connected: boolean;
@@ -51,8 +54,9 @@ export const StoreStripeConnectCard: React.FC<StoreStripeConnectCardProps> = ({
   }, [currentStore.id, getIdToken]);
 
   useEffect(() => {
+    if (isFreeOrTrial) return;
     void syncStripeState();
-  }, [syncStripeState]);
+  }, [isFreeOrTrial, syncStripeState]);
 
   const handleGenerateOnboarding = async () => {
     setBusy(true);
@@ -138,7 +142,20 @@ export const StoreStripeConnectCard: React.FC<StoreStripeConnectCardProps> = ({
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {isFreeOrTrial ? (
+        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-2 text-xs text-amber-100">
+          <p className="font-bold text-amber-300">
+            Plano Free (7 dias grátis) — Recebimento apenas via PIX direto, dinheiro ou maquininha externa
+          </p>
+          <p className="text-slate-300 leading-relaxed">
+            Durante os 7 dias gratuitos, o recebimento online via Stripe (cartão pela plataforma e Stripe Invoicing) permanece bloqueado.
+            No Marketplace e no PDV, utilize sua chave PIX direta ou pagamento manual/equipamento externo (maquininha física).
+            A plataforma cobra apenas a assinatura SaaS (0% sobre vendas); faça upgrade para um plano pago para liberar o Stripe Connect.
+          </p>
+        </div>
+      ) : null}
+
+      <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${isFreeOrTrial ? 'opacity-50 pointer-events-none select-none' : ''}`}>
         {/* Connect Onboarding */}
         <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
           <div className="text-xs font-bold text-white flex items-center justify-between">

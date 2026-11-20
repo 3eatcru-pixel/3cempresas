@@ -142,11 +142,19 @@ export async function ensureStripeCustomerForStore(store: Record<string, any>, f
   return customer.id;
 }
 
+export function isStoreFreeOrTrialPlan(store?: Record<string, any> | null): boolean {
+  const plan = String(store?.subscriptionPlan || 'FREE').trim().toUpperCase();
+  const status = String(store?.saasPaymentStatus || '').trim().toUpperCase();
+  return plan === 'FREE' || status === 'TRIAL';
+}
+
 export function computeOrderConnectSplit(params: {
   amountMinor: number;
   channel?: string;
+  deliveryModality?: string;
   store?: Record<string, any> | null;
   globalCommissionRate?: number;
+  platformFleetCommissionEnabled?: boolean;
 }) {
   const store = params.store || {};
   const connectAccountId =
@@ -162,12 +170,22 @@ export function computeOrderConnectSplit(params: {
   }
 
   const channelUpper = String(params.channel || 'MARKETPLACE').toUpperCase();
+  const modalityUpper = String(params.deliveryModality || '').toUpperCase();
   const isDirectInStoreSale = ['PDV', 'POS', 'WAITER', 'WAITER_TABLE', 'TABLE', 'KIOSK'].includes(
     channelUpper
   );
-  const rawCommission = isDirectInStoreSale
+  const isNonPlatformFleetDelivery =
+    modalityUpper === 'STORE_FLEET' || modalityUpper === 'PICKUP' || modalityUpper === 'TABLE';
+  // A plataforma monetiza via subscrição SaaS (0% sobre vendas); comissão percentual aplica-se
+  // somente quando a frota de motoristas da plataforma estiver explicitamente liberada e ativa.
+  const commissionDisabledByModel =
+    isDirectInStoreSale ||
+    isNonPlatformFleetDelivery ||
+    params.platformFleetCommissionEnabled === false;
+
+  const rawCommission = commissionDisabledByModel
     ? 0
-    : Number(store.commissionRate ?? params.globalCommissionRate ?? 12);
+    : Number(store.commissionRate ?? params.globalCommissionRate ?? 0);
   const commissionPct = Math.min(50, Math.max(0, Number.isFinite(rawCommission) ? rawCommission : 0));
   const applicationFeeAmount =
     commissionPct > 0 ? Math.round((params.amountMinor * commissionPct) / 100) : 0;
@@ -183,6 +201,7 @@ export async function createOrderPaymentIntent(params: {
   order: Record<string, any>;
   store: Record<string, any>;
   globalCommissionRate?: number;
+  platformFleetCommissionEnabled?: boolean;
   customerEmail?: string;
 }) {
   const stripe = getStripeClient();
@@ -196,8 +215,10 @@ export async function createOrderPaymentIntent(params: {
   const split = computeOrderConnectSplit({
     amountMinor,
     channel: params.order.channel,
+    deliveryModality: params.order.deliveryModality,
     store: params.store,
     globalCommissionRate: params.globalCommissionRate,
+    platformFleetCommissionEnabled: params.platformFleetCommissionEnabled,
   });
 
   const paymentIntent = await stripe.paymentIntents.create({
@@ -248,6 +269,7 @@ export async function createOrderCheckoutSession(params: {
   order: Record<string, any>;
   store: Record<string, any>;
   globalCommissionRate?: number;
+  platformFleetCommissionEnabled?: boolean;
   customerEmail?: string;
   successUrl: string;
   cancelUrl: string;
@@ -263,8 +285,10 @@ export async function createOrderCheckoutSession(params: {
   const split = computeOrderConnectSplit({
     amountMinor,
     channel: params.order.channel,
+    deliveryModality: params.order.deliveryModality,
     store: params.store,
     globalCommissionRate: params.globalCommissionRate,
+    platformFleetCommissionEnabled: params.platformFleetCommissionEnabled,
   });
 
   const session = await stripe.checkout.sessions.create({

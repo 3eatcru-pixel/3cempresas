@@ -1,6 +1,7 @@
 export interface StoreDocumentQueryFilter {
   storeId?: string;
   tenantId?: string;
+  customerId?: string;
   status?: string;
   sinceHlc?: string;
   limit?: number;
@@ -22,6 +23,10 @@ export function buildStoreDocumentsQuerySql(
   if (filter.storeId) {
     clauses.push(`store_id = $${idx++}`);
     params.push(filter.storeId);
+  }
+  if (filter.customerId) {
+    clauses.push(`(data->>'customerId') = $${idx++}`);
+    params.push(filter.customerId);
   }
   if (filter.status) {
     clauses.push(`(data->>'status') = $${idx++}`);
