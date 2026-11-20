@@ -440,6 +440,9 @@ router.get('/providers', async (_req, res) => {
     supabaseUrl: sbRuntime.url || null,
     supabasePublishableKey: sbRuntime.publishableKey || null,
     supabaseJwksUrl: sbRuntime.jwksUrl || null,
+    supabaseOauthAuthorizeUrl: sbRuntime.oauthAuthorizeUrl || null,
+    supabaseOauthTokenUrl: sbRuntime.oauthTokenUrl || null,
+    supabaseOidcDiscoveryUrl: sbRuntime.oidcDiscoveryUrl || null,
   });
 });
 

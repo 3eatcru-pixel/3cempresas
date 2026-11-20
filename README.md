@@ -77,7 +77,7 @@ Use o parâmetro `?app=` na URL local (`http://localhost:3000`) ou no domínio d
 | `npm run test:sentinel-heavy` | Testes pesados de segurança, concorrência e integridade |
 | `npm run test:phase3` | Testes de fase 3 (Desktop, Android, Edge e paridade) |
 | `npm run test:e2e` | Fluxos ponta a ponta entre produtos |
-| `npm run sentinel` | Executa o auditor completo **3C Sentinel 1.0** (scanners + 17 suítes) |
+| `npm run sentinel` | Executa o auditor completo **3C Sentinel 1.0** (20 scanners + 21 suítes) |
 | `npm run audit` / `npm run test:all` | Executa validação completa de build, lint e testes |
 | `npm run clean` | Limpa artefatos temporários de build |
 

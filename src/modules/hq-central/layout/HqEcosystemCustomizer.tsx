@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { DEFAULT_PLATFORM_RUNTIME_POLICY } from '../../../constants/platformDefaults';
 import { PlatformGovernance } from '../../../types';
+import { HqRuntimePolicySection } from './HqRuntimePolicySection';
 
 interface HqEcosystemCustomizerProps {
   governance: PlatformGovernance;
@@ -66,6 +67,15 @@ export const HqEcosystemCustomizer: React.FC<HqEcosystemCustomizerProps> = ({
   const [runtimeEmailWebhookUrl, setRuntimeEmailWebhookUrl] = useState<string>(
     governance.runtimePolicy?.emailWebhookUrl || ''
   );
+  const [runtimeSupabaseUrl, setRuntimeSupabaseUrl] = useState<string>(
+    governance.runtimePolicy?.supabaseUrl || ''
+  );
+  const [runtimeSupabasePublishableKey, setRuntimeSupabasePublishableKey] = useState<string>(
+    governance.runtimePolicy?.supabasePublishableKey || ''
+  );
+  const [runtimeSupabaseJwksUrl, setRuntimeSupabaseJwksUrl] = useState<string>(
+    governance.runtimePolicy?.supabaseJwksUrl || ''
+  );
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -90,6 +100,9 @@ export const HqEcosystemCustomizer: React.FC<HqEcosystemCustomizerProps> = ({
     setRuntimeExtraOrigins((governance.runtimePolicy?.extraAllowedOrigins || []).join(', '));
     setRuntimeFirebaseProjectId(governance.runtimePolicy?.firebaseProjectIdOverride || '');
     setRuntimeEmailWebhookUrl(governance.runtimePolicy?.emailWebhookUrl || '');
+    setRuntimeSupabaseUrl(governance.runtimePolicy?.supabaseUrl || '');
+    setRuntimeSupabasePublishableKey(governance.runtimePolicy?.supabasePublishableKey || '');
+    setRuntimeSupabaseJwksUrl(governance.runtimePolicy?.supabaseJwksUrl || '');
   }, [governance]);
 
   const handleSave = async (e: React.FormEvent) => {
@@ -125,6 +138,9 @@ export const HqEcosystemCustomizer: React.FC<HqEcosystemCustomizerProps> = ({
           extraAllowedOrigins: parsedOrigins,
           firebaseProjectIdOverride: runtimeFirebaseProjectId.trim(),
           emailWebhookUrl: runtimeEmailWebhookUrl.trim(),
+          supabaseUrl: runtimeSupabaseUrl.trim().replace(/\/+$/, ''),
+          supabasePublishableKey: runtimeSupabasePublishableKey.trim(),
+          supabaseJwksUrl: runtimeSupabaseJwksUrl.trim(),
         },
       });
     } finally {
@@ -351,36 +367,25 @@ export const HqEcosystemCustomizer: React.FC<HqEcosystemCustomizerProps> = ({
         </div>
       </div>
 
-      <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-4 space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="text-xs font-black uppercase tracking-wide text-cyan-300">
-            Variáveis de Runtime (HQ + Server Core • Segredos permanecem no Cofre/Server)
-          </span>
-          <span className="text-[10px] font-mono text-slate-500">runtimePolicy</span>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-          <div className="space-y-1">
-            <label className="text-[11px] font-bold text-slate-400">Max Objeto Storage (MB)</label>
-            <input type="number" min={1} max={50} disabled={!canEdit} value={runtimeStorageMaxMb} onChange={(e) => setRuntimeStorageMaxMb(parseInt(e.target.value, 10) || 2)} className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-white disabled:opacity-50" />
-          </div>
-          <div className="space-y-1">
-            <label className="text-[11px] font-bold text-slate-400">Cota Tenant Storage (MB)</label>
-            <input type="number" min={5} max={2048} disabled={!canEdit} value={runtimeTenantQuotaMb} onChange={(e) => setRuntimeTenantQuotaMb(parseInt(e.target.value, 10) || 50)} className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-white disabled:opacity-50" />
-          </div>
-          <div className="space-y-1">
-            <label className="text-[11px] font-bold text-slate-400">Firebase Project ID</label>
-            <input type="text" disabled={!canEdit} value={runtimeFirebaseProjectId} onChange={(e) => setRuntimeFirebaseProjectId(e.target.value)} placeholder="Opcional (padrão env)" className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-white disabled:opacity-50" />
-          </div>
-          <div className="space-y-1 lg:col-span-2">
-            <label className="text-[11px] font-bold text-slate-400">E-mail Webhook URL (HTTPS)</label>
-            <input type="url" disabled={!canEdit} value={runtimeEmailWebhookUrl} onChange={(e) => setRuntimeEmailWebhookUrl(e.target.value)} placeholder="https://mailer.suaempresa.com.br/hook" className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-white disabled:opacity-50" />
-          </div>
-          <div className="space-y-1 sm:col-span-2 lg:col-span-5">
-            <label className="text-[11px] font-bold text-slate-400">Origens CORS Extras Autorizadas (separadas por vírgula)</label>
-            <input type="text" disabled={!canEdit} value={runtimeExtraOrigins} onChange={(e) => setRuntimeExtraOrigins(e.target.value)} placeholder="https://app.suaempresa.com.br, https://loja.suaempresa.com.br" className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-mono text-white disabled:opacity-50" />
-          </div>
-        </div>
-      </div>
+      <HqRuntimePolicySection
+        canEdit={canEdit}
+        runtimeStorageMaxMb={runtimeStorageMaxMb}
+        setRuntimeStorageMaxMb={setRuntimeStorageMaxMb}
+        runtimeTenantQuotaMb={runtimeTenantQuotaMb}
+        setRuntimeTenantQuotaMb={setRuntimeTenantQuotaMb}
+        runtimeFirebaseProjectId={runtimeFirebaseProjectId}
+        setRuntimeFirebaseProjectId={setRuntimeFirebaseProjectId}
+        runtimeEmailWebhookUrl={runtimeEmailWebhookUrl}
+        setRuntimeEmailWebhookUrl={setRuntimeEmailWebhookUrl}
+        runtimeExtraOrigins={runtimeExtraOrigins}
+        setRuntimeExtraOrigins={setRuntimeExtraOrigins}
+        runtimeSupabaseUrl={runtimeSupabaseUrl}
+        setRuntimeSupabaseUrl={setRuntimeSupabaseUrl}
+        runtimeSupabasePublishableKey={runtimeSupabasePublishableKey}
+        setRuntimeSupabasePublishableKey={setRuntimeSupabasePublishableKey}
+        runtimeSupabaseJwksUrl={runtimeSupabaseJwksUrl}
+        setRuntimeSupabaseJwksUrl={setRuntimeSupabaseJwksUrl}
+      />
 
       <div className="flex items-center justify-between pt-2 border-t border-slate-800">
         <div className="text-[11px] text-slate-400">

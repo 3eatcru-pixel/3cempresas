@@ -38,7 +38,10 @@ async function main() {
   const dynamicMeta = getSupabaseRuntimeMetadata();
   assert.strictEqual(dynamicMeta.configured, true);
   assert.strictEqual(dynamicMeta.jwksUrl, 'https://demo-project.supabase.co/auth/v1/.well-known/jwks.json');
-  pass('configureSupabaseClientRuntime atualiza URL/JWKS dinamicamente via HQ/Server');
+  assert.strictEqual(dynamicMeta.oauthAuthorizeUrl, 'https://demo-project.supabase.co/auth/v1/oauth/authorize');
+  assert.strictEqual(dynamicMeta.oauthTokenUrl, 'https://demo-project.supabase.co/auth/v1/oauth/token');
+  assert.strictEqual(dynamicMeta.oidcDiscoveryUrl, 'https://demo-project.supabase.co/auth/v1/.well-known/openid-configuration');
+  pass('configureSupabaseClientRuntime atualiza URL, JWKS e endpoints OAuth 2.1/OIDC dinamicamente');
 
   // 2. Validate SecondarySupabaseProvider & ProviderManager descriptors
   const { SecondarySupabaseProvider } = await import(
@@ -59,6 +62,8 @@ async function main() {
 
   // Reset dynamic client config before spinning up Server Core
   configureSupabaseClientRuntime({ url: null, publishableKey: null, jwksUrl: null });
+  assert.strictEqual(getSupabaseRuntimeMetadata().configured, false);
+  assert.strictEqual(getSupabaseClient(), null);
 
   const { createServerCoreApp } = await import('../../src/server/app.ts');
   const app = createServerCoreApp();
@@ -127,7 +132,19 @@ async function main() {
     assert.strictEqual(provAfterPolicy.supabaseConfigured, true);
     assert.strictEqual(provAfterPolicy.supabaseEnabled, true);
     assert.strictEqual(provAfterPolicy.supabaseUrl, 'https://demo-project.supabase.co');
-    pass('PUT /admin/governance hidrata runtimePolicy Supabase e reflete em /auth/providers');
+    assert.strictEqual(
+      provAfterPolicy.supabaseOauthAuthorizeUrl,
+      'https://demo-project.supabase.co/auth/v1/oauth/authorize'
+    );
+    assert.strictEqual(
+      provAfterPolicy.supabaseOauthTokenUrl,
+      'https://demo-project.supabase.co/auth/v1/oauth/token'
+    );
+    assert.strictEqual(
+      provAfterPolicy.supabaseOidcDiscoveryUrl,
+      'https://demo-project.supabase.co/auth/v1/.well-known/openid-configuration'
+    );
+    pass('PUT /admin/governance hidrata runtimePolicy Supabase e reflete endpoints OAuth/OIDC em /auth/providers');
 
     // 7. Tampered Supabase JWT must be rejected (HTTP 401)
     const badJwtRes = await fetch(`${baseUrl}/auth/supabase-exchange`, {
@@ -169,7 +186,15 @@ async function main() {
     assert.strictEqual(standbyJson.migrationsReady, true);
     assert.ok(standbyJson.migrationsCount >= 1);
     assert.ok(String(standbyJson.latestMigration || '').endsWith('.sql'));
-    pass('Kill-switch 1-clique HQ bloqueia /supabase-exchange (403) e coloca /supabase/health em STANDBY (com migrations SQL detectadas)');
+    assert.strictEqual(
+      standbyJson.oauthAuthorizeUrl,
+      'https://demo-project.supabase.co/auth/v1/oauth/authorize'
+    );
+    assert.strictEqual(
+      standbyJson.oidcDiscoveryUrl,
+      'https://demo-project.supabase.co/auth/v1/.well-known/openid-configuration'
+    );
+    pass('Kill-switch 1-clique HQ bloqueia /supabase-exchange (403) e coloca /supabase/health em STANDBY (com migrations SQL e endpoints OIDC)');
 
     // 9. Unauthorized public/consumer access to /supabase/health must be rejected
     const unauthHealthRes = await fetch(`${baseUrl}/supabase/health`);

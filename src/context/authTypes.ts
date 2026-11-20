@@ -49,8 +49,10 @@ export interface AuthContextType {
   signInManual: (name: string, email: string, role: EcosystemSessionRole, emailVerified?: boolean) => Promise<void>;
   loginWithPassword: (email: string, password: string, contextId?: AuthModalContextId) => Promise<void>;
   loginWithFirebaseGoogle: (contextId?: AuthModalContextId) => Promise<void>;
+  loginWithSupabaseToken: (accessToken: string, contextId?: AuthModalContextId) => Promise<void>;
   firebaseEnabled: boolean;
   firebaseFirestoreEnabled: boolean;
+  supabaseEnabled: boolean;
   loginWaiterWithPin: (payload: {
     storeId?: string;
     pin?: string;

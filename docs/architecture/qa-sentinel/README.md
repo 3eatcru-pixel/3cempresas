@@ -23,11 +23,11 @@ npm run sentinel
    - Valida integridade sintática, imports e contratos entre workspaces (`packages/shared-types`, `packages/permissions`, `src/`, `servers/edge-node`).
 3. **Scanners de Segurança Estática (`SCAN-*`):**
    - Detecta vazamento de segredos, usos inseguros, falta de validação de papel/tenant, quebra de fronteiras entre produtos e padrões proibidos de autenticação.
-4. **Execução das Suítes Automatizadas (20 suítes):**
-   - Roda testes funcionais, de segurança, multi-tenant, anti-IDOR, governança do Marketplace/crescimento B2B, isolamento de experiência por persona (5 públicos), Edge Node/SQLite WAL, HLC, SSE, modo dual do conector opcional (ON vs OFF / Kill-Switch) e fluxos E2E entre os 5 produtos.
+4. **Execução das Suítes Automatizadas (21 suítes):**
+   - Roda testes funcionais, de segurança, multi-tenant, anti-IDOR, governança do Marketplace/crescimento B2B, isolamento de experiência por persona (5 públicos), Edge Node/SQLite WAL, HLC, SSE, modo dual dos conectores opcionais (Firebase & Supabase OAuth/JWKS) e fluxos E2E entre os 5 produtos.
 5. **Relatório Consolidado, Logs Vivos & Guardrail Fail-Closed:**
-   - Gera `.sentinel/report-latest.*`, `.sentinel/deficiencies-log.*` (deficiências abertas P0/P1 e consultivas P2/P3), `.sentinel/improvements-log.*` (melhorias verificadas, matriz de experiência das 5 personas e backlog de modularidade/CI) e `.sentinel/audit-history.ndjson` (histórico cronológico das últimas 100 execuções), também visíveis no **HQ Central → Auditoria & Compliance**.
-   - Qualquer falha crítica ou violação de contrato (`SCAN-01..20` ou falha em qualquer das 20 suítes) encerra com status diferente de zero, bloqueando aprovação de release até correção.
+   - Gera `.sentinel/report-latest.*`, `.sentinel/deficiencies-log.*` (deficiências abertas P0/P1 e consultivas P2/P3), `.sentinel/improvements-log.*` (melhorias verificadas, matriz de experiência das 5 personas e rastreamento modular `SCAN-17` com zero monolitos acima do limiar) e `.sentinel/audit-history.ndjson` (histórico cronológico das últimas 100 execuções), também visíveis no **HQ Central → Auditoria & Compliance**.
+   - Qualquer falha crítica ou violação de contrato (`SCAN-01..20` ou falha em qualquer das 21 suítes) encerra com status diferente de zero, bloqueando aprovação de release até correção.
 
 ---
 
@@ -57,7 +57,7 @@ Para evitar falsos positivos ou relatórios vagos, todo achado classificado como
 | `npm run test:sentinel-heavy` | Concorrência, idempotência, estoque delta e isolamento rigoroso entre tenants |
 | `npm run test:phase3` | Paridade multiplataforma, contratos de empacotamento e fluxos avançados |
 | `npm run test:e2e` | Fluxos completos: HQ -> OS Lojista -> Marketplace -> Garçom -> Motorista |
-| `npm run sentinel` | Execução integral dos scanners (`SCAN-01..20`) + 20 suítes + Logs de Deficiências, Melhorias e Matriz das 5 Personas |
+| `npm run sentinel` | Execução integral dos scanners (`SCAN-01..20`) + 21 suítes (`supabase-optional-connector` inclusa) + Logs de Deficiências, Melhorias e Matriz das 5 Personas |
 
 ---
 

@@ -63,9 +63,12 @@ O projeto utiliza **npm workspaces** combinando o servidor full-stack unificado 
 │   └── ...                        # Pacotes utilitários compartilhados
 ├── servers/
 │   └── edge-node/                 # Servidor local offline-first (@3c/edge-node)
+├── supabase/
+│   ├── config.toml                # Configuração Supabase CLI do projeto opcional
+│   └── migrations/                # Migrações SQL Cloud Hub + políticas RLS multi-tenant
 ├── scripts/
 │   └── sentinel.ts                # Auditor 3C Sentinel 1.0
-├── tests/                         # 21 suítes cobrindo segurança, RLS, sync HLC, UX e E2E
+├── tests/                         # 21 suítes cobrindo segurança, RLS, sync HLC, UX, Supabase e E2E
 └── docs/                          # Documentação canônica (ecosystem, architecture, pillars)
 ```
 
@@ -104,10 +107,10 @@ O Server Core abstrai o armazenamento por meio de uma interface única de reposi
    - Persiste em `server-db.json` com escrita atômica (`writeFile` temporário + `rename`).
    - Sinaliza explicitamente `productionDatabaseReady: false` nos endpoints de diagnóstico.
    - Adequado para desenvolvimento, demonstrações e suítes automatizadas locais.
-2. **Ambiente Cloud (`PostgresCloudDriver`):**
+2. **Ambiente Cloud (`PostgresCloudDriver` + Migrações SQL):**
    - Ativado explicitamente via `DATABASE_URL` + `ENABLE_POSTGRES_CLOUD=true`.
-   - Emprega bloqueio pessimista (`SELECT ... FOR UPDATE`) em mutações financeiras/estoque e isolamento multi-tenant no banco (`ENABLE` / `FORCE ROW LEVEL SECURITY`).
-   - Status: implementado no código e coberto por testes de contrato; homologação em cluster multi-instância live permanece pendente de infraestrutura externa.
+   - Emprega bloqueio pessimista (`SELECT ... FOR UPDATE`), isolamento multi-tenant no banco (`ENABLE` / `FORCE ROW LEVEL SECURITY`) e esquema versionado em `supabase/migrations/20261120140000_cloud_hub_schema_rls.sql` (compatível com PostgreSQL nativo ou Supabase Cloud).
+   - O conector secundário opcional Supabase (`@supabase/supabase-js` + `@supabase/server`) opera sob kill-switch do HQ Central (`supabaseEnabled`) para troca criptográfica JWKS/OAuth 2.1 (`POST /api/v1/auth/supabase-exchange`) e cliente RLS sem nunca substituir a autoridade do Server Core.
 3. **Ambiente Local de Loja (`SqliteWalDriver` no Edge Node):**
    - Usa `node:sqlite` (SQLite `>= 3.51.3`) em modo **WAL** (`Write-Ahead Logging`) com ledger local e fila de saída (`sync_outbox`).
    - Detalhes completos em [Sincronização, Offline-First e Edge Node](./sync-and-edge/README.md).

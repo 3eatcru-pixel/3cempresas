@@ -27,6 +27,8 @@ export const ServerSupabaseBackboneCard: React.FC<ServerSupabaseBackboneCardProp
     configured: boolean;
     hasSecretKey: boolean;
     jwksReachable: boolean;
+    oidcReachable?: boolean;
+    latestMigration?: string | null;
     latencyMs: number;
     detail: string;
   } | null>(null);
@@ -38,6 +40,7 @@ export const ServerSupabaseBackboneCard: React.FC<ServerSupabaseBackboneCardProp
         configured: meta.configured,
         hasSecretKey: false,
         jwksReachable: false,
+        oidcReachable: false,
         latencyMs: 0,
         detail: 'Conector Supabase está em modo STANDBY na governança do HQ Central.',
       });
@@ -52,6 +55,8 @@ export const ServerSupabaseBackboneCard: React.FC<ServerSupabaseBackboneCardProp
         configured: res.configured,
         hasSecretKey: res.hasSecretKey,
         jwksReachable: res.jwksReachable,
+        oidcReachable: res.oidcReachable,
+        latestMigration: res.latestMigration,
         latencyMs: res.latencyMs,
         detail: res.detail,
       });
@@ -61,6 +66,7 @@ export const ServerSupabaseBackboneCard: React.FC<ServerSupabaseBackboneCardProp
         configured: meta.configured,
         hasSecretKey: false,
         jwksReachable: false,
+        oidcReachable: false,
         latencyMs: 0,
         detail: err?.message || 'Erro ao consultar /api/v1/supabase/health.',
       });
@@ -175,6 +181,8 @@ export const ServerSupabaseBackboneCard: React.FC<ServerSupabaseBackboneCardProp
           </div>
           <span className="font-mono text-[11px] shrink-0">
             {probe.online ? `ONLINE · ${probe.latencyMs}ms` : `OFFLINE · ${probe.latencyMs}ms`}
+            {probe.oidcReachable ? ' · OIDC OK' : ''}
+            {probe.latestMigration ? ` · ${probe.latestMigration}` : ''}
           </span>
         </div>
       )}

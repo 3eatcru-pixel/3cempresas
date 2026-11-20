@@ -38,7 +38,7 @@ Responsabilidades centrais:
 | `/api/v1/maps/*` | Mapas e Rotas | Integração OpenFreeMap / PMTiles e roteamento multi-parada OSRM |
 | `/api/v1/system/*` | Sistema & Releases | Configuração pública sanitizada, saúde (`status`), manifestos de releases (`/releases/manifest`) e artefatos (`/releases/artifacts`) |
 | `/api/v1/storage/*` | Armazenamento | Upload/leitura de mídia em `LOCAL_VOLUME` com cotas governadas por `runtimePolicy` + env |
-| `/api/v1/supabase/*` | Conector Supabase | Probe de saúde JWKS/Secret (`@supabase/server`) e diagnóstico administrativo |
+| `/api/v1/supabase/*` | Conector Supabase | Probe de saúde JWKS, OIDC Discovery, OAuth 2.1, Secret e migrações SQL (`@supabase/server`) |
 | `/api/v1/ai/*` | Concierge IA | Proxy server-side opcional com fallback determinístico honesto quando indisponível |
 | `/api/v1/health` | Saúde | Diagnóstico de runtime, driver de persistência (`productionDatabaseReady`) e status de manutenção |
 

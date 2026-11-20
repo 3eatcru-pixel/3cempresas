@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Activity, Database, KeyRound, RefreshCw, Server, ShieldCheck } from 'lucide-react';
+import { Activity, Check, Copy, Database, KeyRound, Link2, RefreshCw, Server, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../../../context/AuthContext';
 import { apiClient } from '../../../core/api/apiClient';
+import { getSupabaseRuntimeMetadata } from '../../../services/supabaseClient';
 import { PlatformGovernance } from '../../../types';
 
 interface HqSupabaseServicesGridProps {
@@ -23,10 +24,16 @@ export const HqSupabaseServicesGrid: React.FC<HqSupabaseServicesGridProps> = ({
 }) => {
   const { getIdToken } = useAuth();
   const [probingServer, setProbingServer] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [serverProbe, setServerProbe] = useState<{
     online: boolean;
     hasSecretKey: boolean;
     jwksReachable: boolean;
+    oidcReachable?: boolean;
+    oauthAuthorizeUrl?: string;
+    oauthTokenUrl?: string;
+    oidcDiscoveryUrl?: string;
+    jwksUrl?: string;
     latencyMs: number;
     detail: string;
     source: string;
@@ -37,6 +44,24 @@ export const HqSupabaseServicesGrid: React.FC<HqSupabaseServicesGridProps> = ({
 
   const authEnabled = supabaseEnabled && governance?.featureFlags?.supabaseAuthEnabled !== false;
   const dbEnabled = supabaseEnabled && governance?.featureFlags?.supabaseDbEnabled !== false;
+  const clientMeta = getSupabaseRuntimeMetadata();
+  const baseUrl = (governance?.runtimePolicy?.supabaseUrl || clientMeta.url || '').trim().replace(/\/+$/, '');
+  const oauthEndpoints = baseUrl
+    ? [
+        { id: 'authorize', label: 'Authorization', value: serverProbe?.oauthAuthorizeUrl || `${baseUrl}/auth/v1/oauth/authorize` },
+        { id: 'token', label: 'Token', value: serverProbe?.oauthTokenUrl || `${baseUrl}/auth/v1/oauth/token` },
+        { id: 'jwks', label: 'JWKS', value: serverProbe?.jwksUrl || governance?.runtimePolicy?.supabaseJwksUrl || `${baseUrl}/auth/v1/.well-known/jwks.json` },
+        { id: 'oidc', label: 'OIDC Discovery', value: serverProbe?.oidcDiscoveryUrl || `${baseUrl}/auth/v1/.well-known/openid-configuration` },
+      ]
+    : [];
+
+  const handleCopyEndpoint = (id: string, val: string) => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      void navigator.clipboard.writeText(val);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId((prev) => (prev === id ? null : prev)), 1500);
+    }
+  };
 
   const handleServerProbe = async () => {
     setProbingServer(true);
@@ -47,6 +72,11 @@ export const HqSupabaseServicesGrid: React.FC<HqSupabaseServicesGridProps> = ({
         online: res.online,
         hasSecretKey: res.hasSecretKey,
         jwksReachable: res.jwksReachable,
+        oidcReachable: res.oidcReachable,
+        oauthAuthorizeUrl: res.oauthAuthorizeUrl,
+        oauthTokenUrl: res.oauthTokenUrl,
+        oidcDiscoveryUrl: res.oidcDiscoveryUrl,
+        jwksUrl: res.jwksUrl,
         latencyMs: res.latencyMs,
         detail: res.detail,
         source: res.source,
@@ -59,6 +89,7 @@ export const HqSupabaseServicesGrid: React.FC<HqSupabaseServicesGridProps> = ({
         online: false,
         hasSecretKey: false,
         jwksReachable: false,
+        oidcReachable: false,
         latencyMs: 0,
         detail: err?.message || 'Erro ao sondar /api/v1/supabase/health.',
         source: 'ERROR',
@@ -198,6 +229,45 @@ export const HqSupabaseServicesGrid: React.FC<HqSupabaseServicesGridProps> = ({
         })}
       </div>
 
+      {oauthEndpoints.length > 0 && (
+        <div className="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-300 flex items-center gap-1.5">
+              <Link2 className="w-3.5 h-3.5" />
+              OAuth 2.1 Server &amp; OIDC Endpoints (Derivados da URL configurada)
+            </span>
+            <span className="text-[10px] font-mono text-slate-500">Auth JWKS / OIDC</span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {oauthEndpoints.map((ep) => (
+              <div
+                key={ep.id}
+                className="flex items-center justify-between gap-2 bg-slate-950/90 border border-slate-800 rounded-lg px-2.5 py-1.5"
+              >
+                <div className="min-w-0">
+                  <div className="text-[9px] font-bold uppercase text-slate-400">{ep.label}</div>
+                  <div className="text-[10px] font-mono text-slate-200 truncate" title={ep.value}>
+                    {ep.value}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleCopyEndpoint(ep.id, ep.value)}
+                  className="p-1.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 shrink-0 cursor-pointer"
+                  title={`Copiar ${ep.label}`}
+                >
+                  {copiedId === ep.id ? (
+                    <Check className="w-3 h-3 text-emerald-400" />
+                  ) : (
+                    <Copy className="w-3 h-3" />
+                  )}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {serverProbe && (
         <div
           className={`p-3 rounded-xl border text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
@@ -206,9 +276,17 @@ export const HqSupabaseServicesGrid: React.FC<HqSupabaseServicesGridProps> = ({
               : 'bg-slate-900 border-slate-700 text-slate-300'
           }`}
         >
-          <span>{serverProbe.detail}</span>
+          <div className="space-y-0.5">
+            <div>{serverProbe.detail}</div>
+            {serverProbe.latestMigration && (
+              <div className="text-[10px] font-mono text-slate-400">
+                Última migration: {serverProbe.latestMigration}
+              </div>
+            )}
+          </div>
           <span className="font-mono text-[11px] shrink-0">
-            JWKS: {serverProbe.jwksReachable ? 'OK' : 'N/D'} · Secret:{' '}
+            JWKS: {serverProbe.jwksReachable ? 'OK' : 'N/D'} · OIDC:{' '}
+            {serverProbe.oidcReachable ? 'OK' : 'N/D'} · Secret:{' '}
             {serverProbe.hasSecretKey ? 'ON' : 'OFF'} · SQL Migrations:{' '}
             {serverProbe.migrationsReady ? `${serverProbe.migrationsCount} OK` : '0'} ·{' '}
             {serverProbe.latencyMs}ms

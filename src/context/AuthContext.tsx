@@ -38,6 +38,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
   const [firebaseEnabled, setFirebaseEnabled] = useState<boolean>(false);
   const [firebaseFirestoreEnabled, setFirebaseFirestoreEnabled] = useState<boolean>(false);
+  const [supabaseEnabled, setSupabaseEnabled] = useState<boolean>(false);
 
   const refreshAuthProviders = useCallback(async () => {
     try {
@@ -48,16 +49,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           ? Boolean(providers.firebaseFirestoreEnabled)
           : Boolean(providers?.firebaseEnabled)
       );
-      if (providers?.supabaseUrl || providers?.supabasePublishableKey || providers?.supabaseJwksUrl) {
-        configureSupabaseClientRuntime({
-          url: providers.supabaseUrl,
-          publishableKey: providers.supabasePublishableKey,
-          jwksUrl: providers.supabaseJwksUrl,
-        });
-      }
+      setSupabaseEnabled(Boolean(providers?.supabaseEnabled));
+      configureSupabaseClientRuntime({
+        url: providers?.supabaseUrl || null,
+        publishableKey: providers?.supabasePublishableKey || null,
+        jwksUrl: providers?.supabaseJwksUrl || null,
+      });
     } catch {
       setFirebaseEnabled(false);
       setFirebaseFirestoreEnabled(false);
+      setSupabaseEnabled(false);
     }
   }, []);
 
@@ -226,6 +227,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     authModalContext,
     firebaseEnabled,
     firebaseFirestoreEnabled,
+    supabaseEnabled,
     setToken,
     setProfile,
     setAuthNotice,
@@ -276,6 +278,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ...actions,
         firebaseEnabled,
         firebaseFirestoreEnabled,
+        supabaseEnabled,
         refreshProfile,
         switchRole,
         isAdmin,

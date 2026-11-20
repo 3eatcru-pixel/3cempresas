@@ -4,6 +4,9 @@ export interface SupabaseRuntimeMetadata {
   url: string;
   publishableKey: string;
   jwksUrl: string;
+  oauthAuthorizeUrl: string;
+  oauthTokenUrl: string;
+  oidcDiscoveryUrl: string;
   configured: boolean;
   source: 'VITE_ENV' | 'HQ_SERVER_RUNTIME' | 'UNCONFIGURED';
 }
@@ -46,6 +49,11 @@ export function configureSupabaseClientRuntime(next: {
     publishableKey: nextKey || undefined,
     jwksUrl: nextJwks || undefined,
   };
+
+  if (!nextUrl || !nextKey) {
+    cachedClient = null;
+    cachedSignature = '';
+  }
 }
 
 export function getSupabaseRuntimeMetadata(): SupabaseRuntimeMetadata {
@@ -56,6 +64,9 @@ export function getSupabaseRuntimeMetadata(): SupabaseRuntimeMetadata {
   const publishableKey = dynamicOverride.publishableKey || envKey;
   const jwksUrl =
     dynamicOverride.jwksUrl || (url ? `${url}/auth/v1/.well-known/jwks.json` : '');
+  const oauthAuthorizeUrl = url ? `${url}/auth/v1/oauth/authorize` : '';
+  const oauthTokenUrl = url ? `${url}/auth/v1/oauth/token` : '';
+  const oidcDiscoveryUrl = url ? `${url}/auth/v1/.well-known/openid-configuration` : '';
   const configured = Boolean(url && publishableKey);
 
   const source: SupabaseRuntimeMetadata['source'] =
@@ -69,6 +80,9 @@ export function getSupabaseRuntimeMetadata(): SupabaseRuntimeMetadata {
     url,
     publishableKey,
     jwksUrl,
+    oauthAuthorizeUrl,
+    oauthTokenUrl,
+    oidcDiscoveryUrl,
     configured,
     source,
   };

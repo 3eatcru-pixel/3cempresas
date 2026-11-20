@@ -7,6 +7,7 @@ import {
   signInWithFirebaseGooglePopup,
   signOutFirebaseIfActive,
 } from '../services/firebaseClient';
+import { getSupabaseClient } from '../services/supabaseClient';
 import { AuthModalContextId, UserProfile } from './authTypes';
 
 interface UseAuthActionsParams {
@@ -16,6 +17,7 @@ interface UseAuthActionsParams {
   authModalContext: AuthModalContextId;
   firebaseEnabled: boolean;
   firebaseFirestoreEnabled: boolean;
+  supabaseEnabled: boolean;
   setToken: React.Dispatch<React.SetStateAction<string | null>>;
   setProfile: React.Dispatch<React.SetStateAction<UserProfile | null>>;
   setAuthNotice: React.Dispatch<React.SetStateAction<string | null>>;
@@ -31,6 +33,7 @@ export function useAuthActions(params: UseAuthActionsParams) {
     authModalContext,
     firebaseEnabled,
     firebaseFirestoreEnabled,
+    supabaseEnabled,
     setToken,
     setProfile,
     setAuthNotice,
@@ -111,6 +114,36 @@ export function useAuthActions(params: UseAuthActionsParams) {
       await signOutFirebaseIfActive();
       throw err;
     }
+  };
+
+  const loginWithSupabaseToken = async (accessToken: string, contextId?: AuthModalContextId) => {
+    if (!supabaseEnabled) {
+      throw new Error(
+        'Autenticação via Supabase está desativada no momento. Utilize e-mail e senha.'
+      );
+    }
+    const trimmed = String(accessToken || '').trim();
+    if (!trimmed) {
+      throw new Error('Token de sessão Supabase ausente.');
+    }
+    const rawContext = contextId || authModalContext;
+    const productScope: FirebaseProductScope =
+      rawContext === 'store-os' ||
+      rawContext === 'driver' ||
+      rawContext === 'waiter' ||
+      rawContext === 'hq' ||
+      rawContext === 'server-core'
+        ? rawContext
+        : 'marketplace';
+
+    const exchanged = await apiClient.loginWithSupabaseToken({
+      accessToken: trimmed,
+      contextId: productScope,
+    });
+    platform.storage.setItem('3ccorp_auth_token', exchanged.token);
+    setToken(exchanged.token);
+    setAuthNotice(null);
+    applyAuthenticatedState(exchanged.token, exchanged.user);
   };
 
   const loginWaiterWithPin = async (payload: {
@@ -247,12 +280,17 @@ export function useAuthActions(params: UseAuthActionsParams) {
       // Clear local session state even if network is offline
     }
     await signOutFirebaseIfActive();
+    const sbClient = getSupabaseClient();
+    if (sbClient) {
+      await sbClient.auth.signOut().catch(() => {});
+    }
     clearAuthenticatedState();
   };
 
   return {
     loginWithPassword,
     loginWithFirebaseGoogle,
+    loginWithSupabaseToken,
     loginWaiterWithPin,
     loginDriverWithPin,
     loginStoreDevice,

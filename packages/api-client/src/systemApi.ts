@@ -158,7 +158,11 @@ export const systemApi = {
       dbEnabled: boolean;
       url: string;
       jwksUrl: string;
+      oauthAuthorizeUrl?: string;
+      oauthTokenUrl?: string;
+      oidcDiscoveryUrl?: string;
       jwksReachable: boolean;
+      oidcReachable?: boolean;
       authHealthStatus: number | null;
       latencyMs: number;
       source: string;

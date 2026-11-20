@@ -196,6 +196,9 @@ export const useAdminGovernanceIntegrations = ({
     try {
       await adapter.saveGovernance(updates);
       setGovernance(prev => ({ ...prev, ...updates }));
+      if ((updates.runtimePolicy || updates.featureFlags) && typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('3c:auth-providers-changed'));
+      }
       showNotification('Customizações de governança do ecossistema salvas!');
       logSystemEvent(
         'HQ_GOVERNANCE_CUSTOMIZATION',

@@ -10,6 +10,9 @@ export interface SupabaseServerRuntimeInfo {
   url: string;
   publishableKey: string;
   jwksUrl: string;
+  oauthAuthorizeUrl: string;
+  oauthTokenUrl: string;
+  oidcDiscoveryUrl: string;
   hasSecretKey: boolean;
   configured: boolean;
   source: 'HQ_GOVERNANCE' | 'SERVER_ENV' | 'UNCONFIGURED';
@@ -28,7 +31,11 @@ export interface SupabaseServerHealthProbeResult {
   hasSecretKey: boolean;
   url: string;
   jwksUrl: string;
+  oauthAuthorizeUrl: string;
+  oauthTokenUrl: string;
+  oidcDiscoveryUrl: string;
   jwksReachable: boolean;
+  oidcReachable: boolean;
   authHealthStatus: number | null;
   latencyMs: number;
   source: SupabaseServerRuntimeInfo['source'];
@@ -104,6 +111,9 @@ export function resolveSupabaseServerRuntime(govData?: any): SupabaseServerRunti
   const hqJwks = typeof policy.supabaseJwksUrl === 'string' ? policy.supabaseJwksUrl.trim() : '';
   const envJwks = (process.env.SUPABASE_JWKS_URL || '').trim();
   const jwksUrl = hqJwks || envJwks || (url ? `${url}/auth/v1/.well-known/jwks.json` : '');
+  const oauthAuthorizeUrl = url ? `${url}/auth/v1/oauth/authorize` : '';
+  const oauthTokenUrl = url ? `${url}/auth/v1/oauth/token` : '';
+  const oidcDiscoveryUrl = url ? `${url}/auth/v1/.well-known/openid-configuration` : '';
 
   const hasSecretKey = Boolean(readFirstSecretKeyFromEnv());
   const configured = Boolean(url && publishableKey);
@@ -117,6 +127,9 @@ export function resolveSupabaseServerRuntime(govData?: any): SupabaseServerRunti
     url,
     publishableKey,
     jwksUrl,
+    oauthAuthorizeUrl,
+    oauthTokenUrl,
+    oidcDiscoveryUrl,
     hasSecretKey,
     configured,
     source,
@@ -232,7 +245,11 @@ export async function probeSupabaseServerHealth(
       hasSecretKey: runtime.hasSecretKey,
       url: runtime.url,
       jwksUrl: runtime.jwksUrl,
+      oauthAuthorizeUrl: runtime.oauthAuthorizeUrl,
+      oauthTokenUrl: runtime.oauthTokenUrl,
+      oidcDiscoveryUrl: runtime.oidcDiscoveryUrl,
       jwksReachable: false,
+      oidcReachable: false,
       authHealthStatus: null,
       latencyMs: 0,
       source: runtime.source,
@@ -242,7 +259,7 @@ export async function probeSupabaseServerHealth(
   }
 
   try {
-    const [jwksRes, healthRes] = await Promise.all([
+    const [jwksRes, healthRes, oidcRes] = await Promise.all([
       fetch(runtime.jwksUrl, {
         method: 'GET',
         headers: { Accept: 'application/json' },
@@ -253,10 +270,16 @@ export async function probeSupabaseServerHealth(
         headers: { apikey: runtime.publishableKey },
         signal: AbortSignal.timeout(4500),
       }),
+      fetch(runtime.oidcDiscoveryUrl, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        signal: AbortSignal.timeout(4500),
+      }).catch(() => null),
     ]);
 
     const latencyMs = Math.max(1, Date.now() - startedAt);
     const jwksReachable = jwksRes.ok;
+    const oidcReachable = Boolean(oidcRes?.ok);
     const authHealthStatus = healthRes.status;
     const online = jwksReachable || healthRes.ok;
 
@@ -266,12 +289,16 @@ export async function probeSupabaseServerHealth(
       hasSecretKey: runtime.hasSecretKey,
       url: runtime.url,
       jwksUrl: runtime.jwksUrl,
+      oauthAuthorizeUrl: runtime.oauthAuthorizeUrl,
+      oauthTokenUrl: runtime.oauthTokenUrl,
+      oidcDiscoveryUrl: runtime.oidcDiscoveryUrl,
       jwksReachable,
+      oidcReachable,
       authHealthStatus,
       latencyMs,
       source: runtime.source,
       detail: online
-        ? `Supabase operacional via @supabase/server (${latencyMs}ms · JWKS ${jwksRes.status} · Auth ${healthRes.status}).`
+        ? `Supabase operacional via @supabase/server (${latencyMs}ms · JWKS ${jwksRes.status} · OIDC ${oidcRes?.status ?? 'N/D'} · Auth ${healthRes.status}).`
         : `Supabase respondeu JWKS ${jwksRes.status} / Auth ${healthRes.status}. Server Core segue autônomo.`,
     };
   } catch (err: any) {
@@ -281,7 +308,11 @@ export async function probeSupabaseServerHealth(
       hasSecretKey: runtime.hasSecretKey,
       url: runtime.url,
       jwksUrl: runtime.jwksUrl,
+      oauthAuthorizeUrl: runtime.oauthAuthorizeUrl,
+      oauthTokenUrl: runtime.oauthTokenUrl,
+      oidcDiscoveryUrl: runtime.oidcDiscoveryUrl,
       jwksReachable: false,
+      oidcReachable: false,
       authHealthStatus: null,
       latencyMs: Math.max(1, Date.now() - startedAt),
       source: runtime.source,

@@ -19,6 +19,9 @@ export const authApi = {
       supabaseUrl?: string | null;
       supabasePublishableKey?: string | null;
       supabaseJwksUrl?: string | null;
+      supabaseOauthAuthorizeUrl?: string | null;
+      supabaseOauthTokenUrl?: string | null;
+      supabaseOidcDiscoveryUrl?: string | null;
     }>('/auth/providers', {
       method: 'GET',
       skipAuthInvalidationOn401: true,
