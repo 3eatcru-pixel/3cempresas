@@ -1,0 +1,1 @@
+{"default":{"identifier":"default","description":"Default capability for 3C Store OS Desktop (ESC/POS, Sidecar Edge Node, Updater)","local":true,"windows":["main"],"permissions":["core:default",{"identifier":"shell:allow-spawn","allow":[{"name":"binaries/3c-edge-node","sidecar":true}]},"updater:default"]}}

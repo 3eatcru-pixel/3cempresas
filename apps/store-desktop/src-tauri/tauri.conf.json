@@ -27,6 +27,11 @@
   "bundle": {
     "active": true,
     "targets": ["msi", "nsis", "deb", "appimage"],
+    "icon": [
+      "icons/128x128.png",
+      "icons/icon.png",
+      "icons/icon.ico"
+    ],
     "externalBin": ["binaries/3c-edge-node"],
     "windows": {
       "nsis": {

@@ -380,7 +380,7 @@ fn main() {
                 if let Ok(mut guard) = state.child.lock() {
                     *guard = Some(child);
                     state.running.store(true, Ordering::SeqCst);
-                }
+                };
             }
             Ok(())
         })

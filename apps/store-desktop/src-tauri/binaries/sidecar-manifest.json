@@ -1,14 +1,14 @@
 {
   "name": "3c-edge-node",
   "version": "5.2.1",
-  "targetTriple": "x86_64-unknown-linux-gnu",
-  "mode": "SOURCE_ONLY_REQUIRES_BUILD",
-  "nativeBinaryPresent": false,
-  "expectedNativeBinary": "src-tauri/binaries/3c-edge-node-x86_64-unknown-linux-gnu",
+  "targetTriple": "x86_64-pc-windows-msvc",
+  "mode": "NATIVE_COMPILED_BINARY",
+  "nativeBinaryPresent": true,
+  "expectedNativeBinary": "src-tauri\\binaries\\3c-edge-node-x86_64-pc-windows-msvc.exe",
   "buildCommand": "npm --workspace=@3c/store-desktop run sidecar:prepare:strict",
   "sources": {
-    "edgeEntrySha256": "0e15f07dba6adfa9a8447592ff4e69cefeb9b0e28a928169d3d940a6c445f544",
-    "sqliteDriverSha256": "24817411118300bb7f8adedb225634ec6debd0358441ec7e5f9e98dbbb9d0894"
+    "edgeEntrySha256": "0c07002191ede370bf6050771de3ca5232db25105972afb730a940bfbe1609e1",
+    "sqliteDriverSha256": "5a0237bf01968a04fbfa49fd9b69e5dbe2c439c6e222ac407390b3e15b76880c"
   },
-  "generatedAt": "2026-11-17T07:26:00.000Z"
+  "generatedAt": "2026-11-20T17:39:58.372Z"
 }

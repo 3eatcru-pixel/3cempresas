@@ -11,5 +11,8 @@
     "build:linux": "npm run build:web && tauri build --target x86_64-unknown-linux-gnu",
     "sidecar:prepare": "node ./scripts/prepare-sidecar.mjs",
     "sidecar:prepare:strict": "node ./scripts/prepare-sidecar.mjs --require-native"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.2.0"
   }
 }

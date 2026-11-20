@@ -25,6 +25,7 @@ COPY --from=builder /app/src ./src
 COPY --from=builder /app/packages ./packages
 COPY --from=builder /app/servers ./servers
 COPY --from=builder /app/infrastructure ./infrastructure
+COPY --from=builder /app/supabase ./supabase
 COPY --from=builder /app/docs ./docs
 COPY --from=builder /app/firebase-applet-config.json ./firebase-applet-config.json
 

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">3C Store OS Tablet</string>
+    <string name="title_activity_main">3C Store OS Tablet</string>
+    <string name="package_name">com.threec.store</string>
+    <string name="custom_url_scheme">com.threec.store</string>
+</resources>
