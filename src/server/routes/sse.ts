@@ -9,6 +9,7 @@ const router = express.Router();
 const SSE_TICKET_TTL_MS = 30_000;
 const MAX_SSE_TICKETS = 5_000;
 const MAX_SSE_CLIENTS = Number(process.env.MAX_SSE_CLIENTS || 2_000);
+const MAX_ANON_SSE_CLIENTS = Number(process.env.MAX_ANON_SSE_CLIENTS || 200);
 const sseTicketStore = new Map<
   string,
   {
@@ -124,6 +125,14 @@ router.get('/stream', async (req, res) => {
       error: 'Limite de conexões SSE simultâneas atingido nesta instância. Tente reconectar em instantes.',
     });
   }
+  if (clientRole === 'ANONYMOUS') {
+    const anonCount = sseClients.reduce((acc, c) => acc + (c.role === 'ANONYMOUS' ? 1 : 0), 0);
+    if (anonCount >= MAX_ANON_SSE_CLIENTS) {
+      return res.status(429).json({
+        error: 'Limite de conexões SSE públicas atingido. Autentique-se para abrir stream dedicado.',
+      });
+    }
+  }
 
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -153,14 +162,14 @@ router.get('/stream', async (req, res) => {
   safeWrite({
     type: 'CONNECTED',
     tenantId: activeTenant,
-    activeClients: sseClients.length
+    ...(isDev ? { activeClients: sseClients.length } : {}),
   });
 
   const interval = setInterval(() => {
     const ok = safeWrite({
       type: 'HEARTBEAT',
       timestamp: new Date().toISOString(),
-      activeOrders: db.getCollectionSize('orders')
+      ...(isDev ? { activeOrders: db.getCollectionSize('orders') } : {}),
     });
     if (!ok) {
       clearInterval(interval);

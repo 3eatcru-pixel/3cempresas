@@ -51,5 +51,5 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "exclude": ["dist", "apps/*/dist", "node_modules", ".sentinel"]
+  "exclude": ["dist", "apps/*/dist", "apps/store-desktop/src-tauri/target", "apps/*/android", "node_modules", ".sentinel"]
 }

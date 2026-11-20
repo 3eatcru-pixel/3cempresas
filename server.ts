@@ -18,7 +18,8 @@ async function startServer() {
   try {
     assertProductionSecretConfigured();
   } catch (err: any) {
-    console.warn(`[3C Cloud Hub Startup] ${err?.message || err}`);
+    console.error(`[CRITICAL P0 — 3C Cloud Hub Startup] ${err?.message || err}`);
+    process.exit(1);
   }
   const probe = await probeCloudDatabase();
   const caps = getRuntimePersistenceCapabilities();

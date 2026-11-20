@@ -216,6 +216,7 @@ export function createServerCoreApp(): express.Express {
   const adminRateLimiter = createSlidingWindowRateLimiter(60_000, 120, 'admin');
   const devicePairingRateLimiter = createSlidingWindowRateLimiter(60_000, 20, 'device-pairing');
   const mapsRateLimiter = createSlidingWindowRateLimiter(60_000, 180, 'maps');
+  const sseRateLimiter = createSlidingWindowRateLimiter(60_000, 60, 'sse');
 
   // Cloud Run / Kubernetes standard liveness & readiness probes
   app.get('/healthz', (_req, res) => {
@@ -371,7 +372,7 @@ export function createServerCoreApp(): express.Express {
   app.use('/api/v1/admin', adminRateLimiter, adminRoutes);
   app.use('/api/admin', adminRateLimiter, adminRoutes);
   app.use('/api/v1/generic', genericRoutes);
-  app.use('/api/v1/sse', sseRoutes);
+  app.use('/api/v1/sse', sseRateLimiter, sseRoutes);
   app.use('/api/v1/sync', idempotencyGuard, syncRoutes);
   app.use('/api/v1/storage', storageRoutes);
   app.use('/api/v1/maps', mapsRateLimiter, mapsRoutes);

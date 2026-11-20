@@ -161,6 +161,9 @@ async function settleMarketplaceOrderFromStripe(orderId: string, providerTxId: s
       hlc,
       updatedAt: nowIso,
     };
+    const finOrdRef = db.collection('financial_records').doc(`fin-ord-${orderId}`);
+    const finOrdSnap = await tx.get(finOrdRef);
+
     tx.update(orderRef, patch);
     stageSyncOutboxInTransaction(tx, {
       entity: 'orders',
@@ -171,6 +174,70 @@ async function settleMarketplaceOrderFromStripe(orderId: string, providerTxId: s
       hlc,
       payload: { ...orderData, ...patch, id: orderId },
     });
+
+    if (finOrdSnap.exists) {
+      if (finOrdSnap.data()?.status !== 'PAID') {
+        const finPatch = {
+          status: 'PAID',
+          paymentMethod: orderData.paymentMethod || 'CREDIT_CARD',
+          paymentConfirmationType: 'AUTOMATED_PSP',
+          settlementSource: 'VERIFIED_STRIPE_WEBHOOK',
+          pspProvider: 'STRIPE',
+          providerTransactionId: providerTxId,
+          confirmedByUid: 'psp:STRIPE',
+          confirmedByRole: 'PSP_WEBHOOK',
+          confirmedAt: nowIso,
+          paidAt: nowIso,
+          hlc,
+          updatedAt: nowIso,
+        };
+        tx.update(finOrdRef, finPatch);
+        stageSyncOutboxInTransaction(tx, {
+          entity: 'financial_records',
+          entityId: finOrdRef.id,
+          operation: 'UPSERT',
+          tenantId: orderData.tenantId || 'tenant-1',
+          storeId: orderData.storeId || null,
+          hlc,
+          payload: { ...finOrdSnap.data(), ...finPatch },
+        });
+      }
+    } else if (orderTotal > 0) {
+      const finRecord = {
+        id: finOrdRef.id,
+        tenantId: orderData.tenantId || 'tenant-1',
+        storeId: orderData.storeId || 'CENTRAL_WAREHOUSE',
+        type: 'RECEIVABLE',
+        category: 'VENDAS',
+        description: `Venda ${orderData.channel || 'MARKETPLACE'} ${orderData.code || orderId} (STRIPE)`,
+        amount: orderTotal,
+        dueDate: nowIso.split('T')[0],
+        status: 'PAID',
+        paymentMethod: orderData.paymentMethod || 'CREDIT_CARD',
+        paymentConfirmationType: 'AUTOMATED_PSP',
+        settlementSource: 'VERIFIED_STRIPE_WEBHOOK',
+        pspProvider: 'STRIPE',
+        providerTransactionId: providerTxId,
+        confirmedByUid: 'psp:STRIPE',
+        confirmedByRole: 'PSP_WEBHOOK',
+        confirmedAt: nowIso,
+        paidAt: nowIso,
+        orderId,
+        hlc,
+        createdAt: nowIso,
+        updatedAt: nowIso,
+      };
+      tx.set(finOrdRef, finRecord);
+      stageSyncOutboxInTransaction(tx, {
+        entity: 'financial_records',
+        entityId: finOrdRef.id,
+        operation: 'UPSERT',
+        tenantId: finRecord.tenantId,
+        storeId: finRecord.storeId,
+        hlc,
+        payload: finRecord,
+      });
+    }
     const openCash = orderData.storeId
       ? await findLatestOpenCashSessionInTx(tx, orderData.storeId, orderData.tenantId)
       : null;
@@ -219,11 +286,8 @@ router.post('/webhook', async (req, res) => {
     const event = constructVerifiedStripeEvent(rawBody, signature);
 
     const alreadyProcessed = await runWithSystemDbContext('STRIPE_WEBHOOK_DEDUP', async () => {
-      const ref = db.collection('stripe_webhook_events').doc(event.id);
-      const snap = await ref.get();
-      if (snap.exists) return true;
-      await ref.set({ id: event.id, type: event.type, processedAt: new Date().toISOString() });
-      return false;
+      const snap = await db.collection('stripe_webhook_events').doc(event.id).get();
+      return snap.exists;
     });
     if (alreadyProcessed) {
       return res.json({ received: true, deduplicated: true, eventId: event.id });
@@ -241,18 +305,20 @@ router.post('/webhook', async (req, res) => {
       const storeId = obj?.metadata?.storeId;
       const planTier = obj?.metadata?.planTier;
       const billingCycle = obj?.metadata?.billingCycle;
+      const normalizedCycle = String(billingCycle || 'MONTHLY').toUpperCase();
+      const cycleDays = normalizedCycle === 'ANNUAL' ? 365 : normalizedCycle === 'QUARTERLY' ? 90 : 30;
       if (storeId && planTier) {
         await runWithSystemDbContext('STRIPE_SAAS_CHECKOUT_SETTLE', async () => {
           await db.collection('stores').doc(String(storeId)).set(
             {
               subscriptionPlan: String(planTier),
-              billingCycle: String(billingCycle || 'MONTHLY'),
+              billingCycle: normalizedCycle,
               saasPaymentStatus: 'PAID',
               saasSettlementType: 'AUTOMATED_PSP',
               saasProvider: 'STRIPE',
               stripeSubscriptionId: obj.subscription ? String(obj.subscription) : undefined,
               saasLastPaidAt: nowIso,
-              saasNextDueDate: new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10),
+              saasNextDueDate: new Date(Date.now() + cycleDays * 86400000).toISOString().slice(0, 10),
               pendingUpgradeRequest: null,
               updatedAt: nowIso,
             },
@@ -288,6 +354,14 @@ router.post('/webhook', async (req, res) => {
         )
       );
     }
+
+    await runWithSystemDbContext('STRIPE_WEBHOOK_DEDUP_RECORD', () =>
+      db.collection('stripe_webhook_events').doc(event.id).set({
+        id: event.id,
+        type: event.type,
+        processedAt: new Date().toISOString(),
+      })
+    );
 
     return res.json({ received: true, deduplicated: false, eventId: event.id, type: event.type });
   } catch (err: any) {

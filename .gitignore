@@ -52,3 +52,6 @@ apps/*/android/build/
 # Supabase CLI temporary link caches
 supabase/.temp/
 supabase/.branches/
+
+# Compiled native installers (distributed via Supabase 3c-releases bucket / CDN)
+public/releases/
