@@ -11,3 +11,6 @@ server-db.json.tmp
 apps/*/android
 apps/*/dist
 apps/store-desktop/src-tauri/target
+apps/store-desktop/src-tauri/binaries/3c-edge-node-*
+public/releases
+releases-dist

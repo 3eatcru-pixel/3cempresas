@@ -55,3 +55,4 @@ supabase/.branches/
 
 # Compiled native installers (distributed via Supabase 3c-releases bucket / CDN)
 public/releases/
+releases-dist/

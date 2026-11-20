@@ -37,9 +37,14 @@ const BUILD_COMMANDS: Record<string, Record<string, string>> = {
 };
 
 function getReleasesBaseDir(): string {
-  return process.env.RELEASES_DIR
-    ? path.resolve(process.env.RELEASES_DIR)
-    : path.resolve(process.cwd(), 'public', 'releases');
+  if (process.env.RELEASES_DIR) {
+    return path.resolve(process.env.RELEASES_DIR);
+  }
+  const publicReleases = path.resolve(process.cwd(), 'public', 'releases');
+  if (fs.existsSync(publicReleases)) {
+    return publicReleases;
+  }
+  return path.resolve(process.cwd(), 'releases-dist');
 }
 
 function validateReleaseBaseUrl(rawValue?: string | null): string | null {
