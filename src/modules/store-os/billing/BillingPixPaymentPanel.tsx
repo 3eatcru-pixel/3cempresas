@@ -13,11 +13,15 @@ import {
 } from 'lucide-react';
 import { LocalQrCode } from '../../../components/common/LocalQrCode';
 import { PlatformBillingPaymentConfig, SaasPaymentMethod } from '../../../types';
+import { useAuth } from '../../../context/AuthContext';
+import { apiClient } from '../../../core/api/apiClient';
 
 interface BillingPixPaymentPanelProps {
+  storeId: string;
   selectedPlan: string;
   billingCycle: string;
   paymentMethod: SaasPaymentMethod;
+  couponCode?: string;
   totalBilling: number;
   pixPayload: string;
   billingConfig: PlatformBillingPaymentConfig;
@@ -36,9 +40,11 @@ const METHOD_TITLES: Record<SaasPaymentMethod, string> = {
 };
 
 export const BillingPixPaymentPanel: React.FC<BillingPixPaymentPanelProps> = ({
+  storeId,
   selectedPlan,
   billingCycle,
   paymentMethod,
+  couponCode,
   totalBilling,
   pixPayload,
   billingConfig,
@@ -46,8 +52,37 @@ export const BillingPixPaymentPanel: React.FC<BillingPixPaymentPanelProps> = ({
   onBack,
   onConfirmPayment,
 }) => {
+  const { getIdToken } = useAuth();
   const [copiedPix, setCopiedPix] = useState(false);
   const [copiedBank, setCopiedBank] = useState(false);
+  const [stripeSessionUrl, setStripeSessionUrl] = useState<string | null>(null);
+  const [stripeError, setStripeError] = useState<string | null>(null);
+  const [creatingStripeSession, setCreatingStripeSession] = useState(false);
+
+  const handleCreateStripeCheckout = async () => {
+    setCreatingStripeSession(true);
+    setStripeError(null);
+    try {
+      const token = await getIdToken();
+      if (!token) throw new Error('Autentique-se para gerar checkout Stripe.');
+      const res = await apiClient.createStoreSubscriptionCheckout(
+        {
+          storeId,
+          requestedPlan: selectedPlan,
+          billingCycle: billingCycle as 'MONTHLY' | 'QUARTERLY' | 'ANNUAL',
+          ...(couponCode ? { couponCode } : {}),
+        },
+        token
+      );
+      if (res.url) {
+        setStripeSessionUrl(res.url);
+      }
+    } catch (err: any) {
+      setStripeError(err?.message || 'Erro ao gerar checkout Stripe Billing.');
+    } finally {
+      setCreatingStripeSession(false);
+    }
+  };
 
   const methodLabel = METHOD_TITLES[paymentMethod] || paymentMethod;
   const maxInstallments = Math.max(1, Math.min(12, Number(billingConfig.maxCreditInstallments ?? 12)));
@@ -222,6 +257,31 @@ export const BillingPixPaymentPanel: React.FC<BillingPixPaymentPanelProps> = ({
               <ExternalLink className="w-3.5 h-3.5" />
             </a>
           )}
+          <div className="pt-2 border-t border-slate-800/80 space-y-2">
+            <button
+              type="button"
+              disabled={creatingStripeSession || totalBilling < 1}
+              onClick={handleCreateStripeCheckout}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-black uppercase tracking-wider transition-colors cursor-pointer"
+            >
+              <CreditCard className="w-3.5 h-3.5" />
+              <span>{creatingStripeSession ? 'Gerando Checkout Stripe...' : 'Pagar Online via Stripe Billing'}</span>
+            </button>
+            {stripeError && <p className="text-[11px] text-rose-400">{stripeError}</p>}
+            {stripeSessionUrl && (
+              <div>
+                <a
+                  href={stripeSessionUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-300 hover:text-emerald-200 underline"
+                >
+                  <span>Abrir Sessão Segura Stripe Checkout</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

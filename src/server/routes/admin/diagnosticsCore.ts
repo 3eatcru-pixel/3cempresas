@@ -181,6 +181,29 @@ router.get(
         requiredInProduction: false,
         note: 'Chave administrativa secreta mantida apenas no Server Core / Secret Manager (nunca no frontend).',
       },
+      {
+        key: 'STRIPE_PUBLISHABLE_KEY',
+        scope: 'Server Core + Cliente Checkout',
+        configured: Boolean(
+          process.env.STRIPE_PUBLISHABLE_KEY?.trim() || process.env.VITE_STRIPE_PUBLISHABLE_KEY?.trim()
+        ),
+        requiredInProduction: false,
+        note: 'Chave pública pk_test_/pk_live_ exposta com segurança para Stripe.js / Checkout.',
+      },
+      {
+        key: 'STRIPE_SECRET_KEY',
+        scope: 'Segredo Server Core',
+        configured: Boolean(process.env.STRIPE_SECRET_KEY?.trim()),
+        requiredInProduction: false,
+        note: 'Chave secreta Stripe (Payments, Billing, Connect, Invoicing) restrita ao Server Core.',
+      },
+      {
+        key: 'STRIPE_WEBHOOK_SECRET',
+        scope: 'Segredo Server Core',
+        configured: Boolean(process.env.STRIPE_WEBHOOK_SECRET?.trim()),
+        requiredInProduction: false,
+        note: 'Segredo HMAC whsec_* de assinatura Stripe Webhooks (/api/v1/stripe/webhook).',
+      },
     ];
 
     res.json({

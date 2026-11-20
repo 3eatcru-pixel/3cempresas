@@ -10,6 +10,7 @@ import { HqPlanPricingModal } from './plans/HqPlanPricingModal';
 import { HqBillingPaymentConfigCard } from './plans/HqBillingPaymentConfigCard';
 import { HqStoresBillingTable } from './plans/HqStoresBillingTable';
 import { HqBillingPipeline } from './layout/HqBillingPipeline';
+import { HqStripePlatformCard } from './plans/HqStripePlatformCard';
 
 export const HqPlansTab: React.FC = () => {
   const { profile } = useAuth();
@@ -101,6 +102,8 @@ export const HqPlansTab: React.FC = () => {
         onSave={updateGovernanceSettings}
         onNotify={showNotification}
       />
+
+      <HqStripePlatformCard />
 
       <HqBillingPipeline
         stores={stores}

@@ -5,6 +5,7 @@ import { hqAdminApi } from './hqAdminApi.ts';
 import { storeApi } from './storeApi.ts';
 import { commerceApi } from './commerceApi.ts';
 import { syncApi } from './syncApi.ts';
+import { stripeApi } from './stripeApi.ts';
 
 export type { ApiRequestOptions } from './httpClient.ts';
 export {
@@ -24,6 +25,12 @@ export type {
 export { storeApi } from './storeApi.ts';
 export { commerceApi } from './commerceApi.ts';
 export { syncApi } from './syncApi.ts';
+export { stripeApi } from './stripeApi.ts';
+export type {
+  StripePublicConfigResponse,
+  StripeHealthResponse,
+  StripeInvoiceSummary,
+} from './stripeApi.ts';
 
 export const apiClient = {
   ...httpClientApi,
@@ -33,4 +40,5 @@ export const apiClient = {
   ...storeApi,
   ...commerceApi,
   ...syncApi,
+  ...stripeApi,
 };

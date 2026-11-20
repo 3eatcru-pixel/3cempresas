@@ -23,7 +23,14 @@ import { broadcastSseEvent } from '../../state.ts';
 const router = express.Router();
 
 const isEnvPspWebhookConfigured = () =>
-  Boolean((process.env.SAAS_PSP_WEBHOOK_SECRET || process.env.PSP_WEBHOOK_SECRET || '').trim());
+  Boolean(
+    (
+      process.env.STRIPE_WEBHOOK_SECRET ||
+      process.env.SAAS_PSP_WEBHOOK_SECRET ||
+      process.env.PSP_WEBHOOK_SECRET ||
+      ''
+    ).trim()
+  );
 
 async function checkPspWebhookConfigured(): Promise<boolean> {
   if (isEnvPspWebhookConfigured()) return true;

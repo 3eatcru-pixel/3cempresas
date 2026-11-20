@@ -23,7 +23,7 @@
     "lint": "tsc --noEmit",
     "lint:rules": "eslint firestore.rules",
     "test": "tsx scripts/run-audit-tests.ts",
-    "test:security": "tsx tests/security/hq-central.test.ts && tsx tests/security/server-core.test.ts && tsx tests/security/store-os.test.ts && tsx tests/security/marketplace.test.ts && tsx tests/security/phase1-security.test.ts && tsx tests/security/audit-remediation.test.ts && tsx tests/security/cloud-hub-readiness.test.ts && tsx tests/security/driver-dual-fleet.test.ts && tsx tests/security/postgres-rls-concurrency.test.ts && tsx tests/security/production-readiness.test.ts && tsx tests/security/firebase-optional-connector.test.ts && tsx tests/security/supabase-optional-connector.test.ts && tsx tests/security/marketplace-governance-and-growth.test.ts && tsx tests/security/user-experience-and-isolation.test.ts",
+    "test:security": "tsx tests/security/hq-central.test.ts && tsx tests/security/server-core.test.ts && tsx tests/security/store-os.test.ts && tsx tests/security/marketplace.test.ts && tsx tests/security/phase1-security.test.ts && tsx tests/security/audit-remediation.test.ts && tsx tests/security/cloud-hub-readiness.test.ts && tsx tests/security/driver-dual-fleet.test.ts && tsx tests/security/postgres-rls-concurrency.test.ts && tsx tests/security/production-readiness.test.ts && tsx tests/security/firebase-optional-connector.test.ts && tsx tests/security/supabase-optional-connector.test.ts && tsx tests/security/marketplace-governance-and-growth.test.ts && tsx tests/security/user-experience-and-isolation.test.ts && tsx tests/security/stripe-integration.test.ts",
     "test:e2e": "tsx scripts/test-ecosystem-interaction.ts",
     "test:cross-platform": "tsx tests/cross-platform/edge-wan-reconcile.test.ts && tsx tests/cross-platform/global-homologation.test.ts && tsx tests/cross-platform/offline-maps-vector.test.ts",
     "test:sentinel-heavy": "tsx tests/sentinel/heavy-stress-and-security.test.ts",
@@ -35,6 +35,7 @@
   },
   "dependencies": {
     "@google/genai": "^3.1.0",
+    "@stripe/stripe-js": "^10.3.0",
     "@supabase/server": "^1.9.2",
     "@supabase/supabase-js": "^2.119.2",
     "@tailwindcss/vite": "^4.3.3",
@@ -56,6 +57,7 @@
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
     "react-leaflet": "^5.0.0",
+    "stripe": "^23.2.0",
     "tsx": "^4.21.0",
     "vite": "^8.3.0"
   },

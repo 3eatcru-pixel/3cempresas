@@ -134,3 +134,20 @@ Exemplo ilustrativo de um restaurante com **R$ 80.000/mês** de faturamento brut
   - Aba **Destaque no Marketplace & Canais Externos** dentro da Vitrine Comercial (sem expor termos do HQ): solicitação de campanhas de destaque e conexão de canais externos habilitados
 - **Experiência do Consumidor (`src/modules/marketplace/layout/MarketplaceSpotlightSection.tsx`):**
   - Renderiza Banner Principal patrocinado + Carrossel **"Recomendados para você"** com selo discreto `Patrocinado` / `Destaque`.
+
+---
+
+## 6. Gateway Stripe Integrado (Payments, Billing, Connect & Invoicing)
+
+O Server Core centraliza a integração oficial com a Stripe API para processamento financeiro seguro em BRL sem expor chaves secretas nos frontends:
+
+| Produto Stripe | Finalidade no Ecossistema | Camada Consumidora | Endpoints Principais (`/api/v1/stripe/*`) |
+| :--- | :--- | :--- | :--- |
+| **Payments** | Checkout online e PaymentIntents para pedidos digitais com cálculo autoritativo no servidor | Marketplace (Consumidor) | `POST /payments/intent`, `POST /payments/checkout-session` |
+| **Billing** | Assinaturas SaaS recorrentes (planos `PROMO`..`ENTERPRISE`, mensal/trimestral/anual) e Customer Portal | Store OS (`BillingApp` / `BillingUpgradeModal`) | `POST /billing/subscription-checkout`, `POST /billing/portal` |
+| **Connect** | Onboarding Express de estabelecimentos para repasse automático (take-rate apenas no Marketplace; **0% no PDV/Garçom**) | Store OS (`StoreStripeConnectCard`) | `POST /connect/account`, `POST /connect/onboarding-link`, `GET /connect/status/:storeId` |
+| **Invoicing** | Emissão e gestão de faturas comerciais Stripe B2B / pedidos sob fatura por estabelecimento | Store OS (`StoreStripeConnectCard`) | `POST /invoices`, `GET /invoices` |
+| **Governança & Webhook** | Saúde da integração no HQ, configuração pública não secreta e recepção assinada com verificação `rawBody` + idempotência | HQ Central (`HqStripePlatformCard`) & Server Core | `GET /config`, `GET /health`, `POST /webhook` |
+
+- **Módulos de Referência:** `src/server/services/stripeService.ts`, `src/server/routes/stripe.ts`, `packages/api-client/src/stripeApi.ts`, `tests/security/stripe-integration.test.ts`.
+

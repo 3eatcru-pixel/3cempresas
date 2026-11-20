@@ -7,6 +7,7 @@ import { BillingCurrentPlanCard } from '../billing/BillingCurrentPlanCard';
 import { BillingUpgradeModal } from '../billing/BillingUpgradeModal';
 import { StoreDevicesManager } from '../billing/StoreDevicesManager';
 import { StorePeripheralsManager } from '../billing/StorePeripheralsManager';
+import { StoreStripeConnectCard } from '../billing/StoreStripeConnectCard';
 
 export const BillingApp: React.FC = () => {
   const {
@@ -287,6 +288,8 @@ export const BillingApp: React.FC = () => {
         onRevokeToken={revokeDeviceToken}
         onOpenUpgrade={() => setIsUpgradeOpen(true)}
       />
+
+      <StoreStripeConnectCard currentStore={currentStore} onNotify={showNotification} />
 
       <StorePeripheralsManager currentStore={currentStore} />
 

@@ -148,6 +148,12 @@ export interface Store {
     couponCode?: string;
     couponDiscount?: number;
   };
+  stripeCustomerId?: string;
+  stripeConnectAccountId?: string;
+  stripeConnectChargesEnabled?: boolean;
+  stripeConnectPayoutsEnabled?: boolean;
+  stripeConnectDetailsSubmitted?: boolean;
+  stripeSubscriptionId?: string;
   isDemo?: boolean;
   _deleted?: boolean;
 }

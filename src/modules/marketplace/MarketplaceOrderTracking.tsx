@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Order } from '../../types';
-import { ArrowLeft, XCircle, RotateCcw, FolderLock, CheckCircle2, Loader2 } from 'lucide-react';
+import { ArrowLeft, XCircle, RotateCcw, FolderLock, CheckCircle2, Loader2, CreditCard, ExternalLink } from 'lucide-react';
 import { TrackingProgressStepper } from './tracking/TrackingProgressStepper';
 import { TrackingOrderSummary } from './tracking/TrackingOrderSummary';
 import { useEcosystem } from '../../context/EcosystemContext';
-import { apiClient } from '../../../packages/api-client/src';
+import { useAuth } from '../../context/AuthContext';
+import { apiClient } from '../../core/api/apiClient';
 
 interface OrderTrackingProps {
   order: Order;
@@ -18,10 +19,57 @@ export const MarketplaceOrderTracking: React.FC<OrderTrackingProps> = ({
   onReorder,
 }) => {
   const { cancelCustomerOrder, showNotification } = useEcosystem();
+  const { getIdToken } = useAuth();
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [savingVault, setSavingVault] = useState(false);
   const [vaultSaved, setVaultSaved] = useState(false);
+  const [stripeConfigured, setStripeConfigured] = useState(false);
+  const [creatingPaymentLink, setCreatingPaymentLink] = useState(false);
+  const [stripePayUrl, setStripePayUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    apiClient
+      .getStripeConfig()
+      .then((cfg) => {
+        if (active) setStripeConfigured(Boolean(cfg?.configured));
+      })
+      .catch(() => {
+        if (active) setStripeConfigured(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const canPayOnlineNow =
+    stripeConfigured &&
+    order.paymentStatus !== 'PAID' &&
+    order.status !== 'CANCELLED' &&
+    order.paymentMethod !== 'CASH' &&
+    order.paymentMethod !== 'TABLE_BILL' &&
+    Number(order.total || 0) >= 1;
+
+  const handleCreateOrderStripeCheckout = async () => {
+    setCreatingPaymentLink(true);
+    try {
+      const token = await getIdToken();
+      if (!token) {
+        showNotification('Faça login como consumidor para concluir o pagamento online.');
+        return;
+      }
+      const res = await apiClient.createOrderStripeCheckout(order.id, undefined, token);
+      if (res.url) {
+        setStripePayUrl(res.url);
+        showNotification('Checkout seguro gerado! Clique no link para concluir o pagamento.');
+      }
+    } catch (err: any) {
+      showNotification(err?.message || 'Não foi possível iniciar o pagamento online agora.');
+    } finally {
+      setCreatingPaymentLink(false);
+    }
+  };
 
   const handleCancelOrder = async () => {
     setCancelling(true);
@@ -144,6 +192,40 @@ export const MarketplaceOrderTracking: React.FC<OrderTrackingProps> = ({
 
       {/* Order Details & Logistics */}
       <TrackingOrderSummary order={order} />
+
+      {canPayOnlineNow && (
+        <div className="bg-slate-900 p-4 rounded-2xl border border-indigo-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="space-y-0.5">
+            <div className="text-xs font-bold text-white flex items-center gap-1.5">
+              <CreditCard className="w-4 h-4 text-indigo-400" />
+              <span>Pagamento Online Seguro Disponível</span>
+            </div>
+            <p className="text-[11px] text-slate-400">
+              Conclua o pagamento de R$ {Number(order.total || 0).toFixed(2)} por cartão ou carteira digital.
+            </p>
+          </div>
+          {stripePayUrl ? (
+            <a
+              href={stripePayUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black uppercase rounded-xl flex items-center gap-1.5 shrink-0"
+            >
+              <span>Pagar Agora</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          ) : (
+            <button
+              type="button"
+              disabled={creatingPaymentLink}
+              onClick={handleCreateOrderStripeCheckout}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black uppercase rounded-xl cursor-pointer disabled:opacity-50 shrink-0"
+            >
+              {creatingPaymentLink ? 'Gerando...' : 'Gerar Pagamento Online'}
+            </button>
+          )}
+        </div>
+      )}
 
       {order.status === 'PENDING' && (
         <div className="bg-slate-900 p-4 rounded-2xl border border-rose-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">

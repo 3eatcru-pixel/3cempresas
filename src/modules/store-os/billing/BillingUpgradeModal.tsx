@@ -374,9 +374,11 @@ export const BillingUpgradeModal: React.FC<BillingUpgradeModalProps> = ({
           </div>
         ) : (
           <BillingPixPaymentPanel
+            storeId={currentStore.id}
             selectedPlan={selectedPlan}
             billingCycle={billingCycle}
             paymentMethod={paymentMethod}
+            couponCode={couponEval.matchedCoupon?.code}
             totalBilling={totalBilling}
             pixPayload={pixPayload}
             billingConfig={liveBillingConfig}

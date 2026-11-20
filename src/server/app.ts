@@ -16,6 +16,7 @@ import systemRoutes from './routes/system.ts';
 import storageRoutes from './routes/storage.ts';
 import mapsRoutes from './routes/maps.ts';
 import supabaseRoutes from './routes/supabase.ts';
+import stripeRoutes from './routes/stripe.ts';
 
 import {
   RateLimitEntry,
@@ -124,7 +125,16 @@ export function createServerCoreApp(): express.Express {
   });
   app.use(['/api/v1/admin/restore', '/api/admin/restore', '/api/v1/admin/diagnostics/restore-preview', '/api/admin/diagnostics/restore-preview'], express.json({ limit: '25mb' }));
   app.use('/api/v1/storage/objects', express.json({ limit: '4mb' }));
-  app.use(express.json({ limit: '2mb' }));
+  app.use(
+    express.json({
+      limit: '2mb',
+      verify: (req, _res, buf) => {
+        if (buf && buf.length > 0) {
+          (req as any).rawBody = buf;
+        }
+      },
+    })
+  );
   app.use(httpCompressionMiddleware);
   app.use(attachContractContext);
 
@@ -364,6 +374,7 @@ export function createServerCoreApp(): express.Express {
   app.use('/api/v1/storage', storageRoutes);
   app.use('/api/v1/maps', mapsRateLimiter, mapsRoutes);
   app.use('/api/v1/supabase', adminRateLimiter, supabaseRoutes);
+  app.use('/api/v1/stripe', stripeRoutes);
 
   return app;
 }

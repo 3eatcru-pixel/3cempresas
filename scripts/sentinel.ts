@@ -1038,6 +1038,14 @@ function runSuites(tmpSandboxDir: string): { results: SuiteResult[]; skippedSuit
       boundary: 'Server Core ↔ Conector Opcional Supabase',
       quickInclude: true,
     },
+    {
+      id: 'stripe-integration',
+      label: 'Stripe Platform (Payments, Billing, Connect, Invoicing & Webhook HMAC)',
+      scriptPath: 'tests/security/stripe-integration.test.ts',
+      pillars: ['HQ Central', 'Server Core', 'Store OS', 'Marketplace'],
+      boundary: 'HQ ↔ Store OS ↔ Marketplace ↔ Stripe Gateway',
+      quickInclude: true,
+    },
   ];
 
   const selected = isQuickMode ? suites.filter((s) => s.quickInclude) : suites;

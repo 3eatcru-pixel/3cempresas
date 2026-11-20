@@ -194,6 +194,18 @@ export function sanitizeBillingConfigPatch(
       error: 'A URL base de checkout/fatura deve iniciar com https:// para segurança dos lojistas.',
     };
   }
+  const stripeSecretPattern = /(?:^|[^a-z0-9_])(sk_(?:test|live)_[a-zA-Z0-9]+|rk_(?:test|live)_[a-zA-Z0-9]+|whsec_[a-zA-Z0-9]+)/;
+  if (
+    stripeSecretPattern.test(String(incoming.paymentInstructions || '')) ||
+    stripeSecretPattern.test(checkoutBaseUrl)
+  ) {
+    return {
+      ok: false,
+      status: 400,
+      error:
+        'Chaves secretas Stripe (sk_*/rk_*/whsec_*) nunca podem ser gravadas na governança; mantenha-as apenas no Secret Manager do Server Core.',
+    };
+  }
 
   const gracePeriodDays =
     incoming.gracePeriodDays !== undefined ? Number(incoming.gracePeriodDays) : existingBilling.gracePeriodDays;
@@ -532,6 +544,15 @@ export function sanitizeRuntimePolicyPatch(
       status: 400,
       error:
         'Chaves secretas (SUPABASE_SECRET_KEY / service_role) nunca podem ser gravadas em runtimePolicy; mantenha-as apenas no Secret Manager do Server Core.',
+    };
+  }
+  const serializedRuntimeFields = JSON.stringify(incoming || {});
+  if (/(?:sk_(?:test|live)_[a-zA-Z0-9]+|rk_(?:test|live)_[a-zA-Z0-9]+|whsec_[a-zA-Z0-9]+)/.test(serializedRuntimeFields)) {
+    return {
+      ok: false,
+      status: 400,
+      error:
+        'Chaves secretas Stripe (sk_*/rk_*/whsec_*) nunca podem ser gravadas em runtimePolicy; mantenha-as apenas no Secret Manager do Server Core.',
     };
   }
 
