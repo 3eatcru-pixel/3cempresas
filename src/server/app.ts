@@ -245,6 +245,7 @@ export function createServerCoreApp(): express.Express {
       region: process.env.CLOUD_REGION || 'local',
       persistenceDriver: caps.persistenceDriver,
       persistenceMode: caps.persistenceMode,
+      databaseProvider: caps.databaseProvider,
       productionDatabaseReady: caps.productionDatabaseReady,
       cloudProbeVerified: caps.cloudProbeVerified,
     });
@@ -343,6 +344,7 @@ export function createServerCoreApp(): express.Express {
       activeConnections: sseClients.length,
       persistenceDriver: caps.persistenceDriver,
       persistenceMode: caps.persistenceMode,
+      databaseProvider: caps.databaseProvider,
       productionDatabaseReady: caps.productionDatabaseReady,
       cloudProbeVerified: caps.cloudProbeVerified,
       cloudProbeLastCheckedAt: caps.cloudProbeLastCheckedAt,

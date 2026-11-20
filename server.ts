@@ -26,9 +26,9 @@ async function startServer() {
     console.error('[CRITICAL P0] Servidor iniciado em NODE_ENV=production sem banco Cloud primário configurado. Mutação de dados bloqueada até configurar PostgreSQL Cloud ou ALLOW_SANDBOX_IN_PRODUCTION=true.');
   } else {
     console.log(
-      `[Server Core Persistence] Driver=${caps.persistenceDriver} Mode=${caps.persistenceMode} ProdReady=${caps.productionDatabaseReady} CloudVerified=${probe.verified}`
+      `[Server Core Persistence] Driver=${caps.persistenceDriver} Mode=${caps.persistenceMode} Provider=${caps.databaseProvider} ProdReady=${caps.productionDatabaseReady} CloudVerified=${probe.verified}`
     );
-    if (!probe.verified && (process.env.DATABASE_URL || process.env.POSTGRES_URL)) {
+    if (!probe.verified && (process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.SUPABASE_DB_URL)) {
       console.warn(`[Server Core Persistence] Cloud PostgreSQL indisponível (${probe.error}); operando em fallback local.`);
     }
   }

@@ -214,6 +214,8 @@ export function getRuntimePersistenceCapabilities() {
     persistenceDriver: productionDatabaseReady ? ('postgres-cloud' as const) : ('json-memory' as const),
     persistenceMode: productionDatabaseReady ? ('CLOUD_PRIMARY' as const) : ('SANDBOX_LOCAL' as const),
     dbConnectionMode: target.mode,
+    databaseProvider: target.provider || 'none',
+    databaseUrlSource: target.sourceEnvKey || null,
     productionDatabaseReady,
     sandboxModeBlockedInProduction,
   };

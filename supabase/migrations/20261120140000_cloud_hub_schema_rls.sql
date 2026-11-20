@@ -54,16 +54,15 @@ CREATE INDEX IF NOT EXISTS idx_store_docs_data_gin
   ON public.store_documents USING GIN (data jsonb_path_ops);
 
 -- PostgreSQL 18+ Virtual Generated Columns (safe no-op on PG 15–17)
+-- EXECUTE dinâmico: o PL/pgSQL valida a sintaxe de comandos estáticos mesmo em ramos
+-- não executados, e `VIRTUAL` é erro de sintaxe antes do PG 18.
 DO $$
 BEGIN
   IF current_setting('server_version_num')::int >= 180000 THEN
     BEGIN
-      ALTER TABLE public.store_documents
-        ADD COLUMN IF NOT EXISTS status_v TEXT GENERATED ALWAYS AS (data->>'status') VIRTUAL;
-      ALTER TABLE public.store_documents
-        ADD COLUMN IF NOT EXISTS customer_email_v TEXT GENERATED ALWAYS AS (LOWER(data->>'customerEmail')) VIRTUAL;
-      ALTER TABLE public.store_documents
-        ADD COLUMN IF NOT EXISTS hlc_v TEXT GENERATED ALWAYS AS (data->>'hlc') VIRTUAL;
+      EXECUTE 'ALTER TABLE public.store_documents ADD COLUMN IF NOT EXISTS status_v TEXT GENERATED ALWAYS AS (data->>''status'') VIRTUAL';
+      EXECUTE 'ALTER TABLE public.store_documents ADD COLUMN IF NOT EXISTS customer_email_v TEXT GENERATED ALWAYS AS (LOWER(data->>''customerEmail'')) VIRTUAL';
+      EXECUTE 'ALTER TABLE public.store_documents ADD COLUMN IF NOT EXISTS hlc_v TEXT GENERATED ALWAYS AS (data->>''hlc'') VIRTUAL';
     EXCEPTION WHEN OTHERS THEN
       NULL;
     END;

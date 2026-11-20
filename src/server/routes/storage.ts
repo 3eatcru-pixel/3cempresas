@@ -13,6 +13,13 @@ import {
   resolveOptionalUser,
   verifyAutonomousToken,
 } from '../middleware/auth.ts';
+import {
+  getSupabaseBlob,
+  putSupabaseBlob,
+  removeSupabaseBlob,
+  resolveActiveBlobStorageDriver,
+  resolveSupabaseStorageBucket,
+} from '../storage/supabaseBlobStore.ts';
 
 const router = express.Router();
 
@@ -151,7 +158,7 @@ router.get('/objects', verifyAutonomousToken, async (req, res) => {
       filtered.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
 
       return res.json({
-        driver: 'LOCAL_VOLUME',
+        driver: resolveActiveBlobStorageDriver(),
         quotaScope: 'USER_PERSONAL',
         ownerUid: user.uid,
         tenantId: targetTenantId,
@@ -189,7 +196,7 @@ router.get('/objects', verifyAutonomousToken, async (req, res) => {
     filtered.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
 
     res.json({
-      driver: 'LOCAL_VOLUME',
+      driver: resolveActiveBlobStorageDriver(),
       quotaScope: 'TENANT',
       ownerUid: null,
       tenantId: targetTenantId,
@@ -304,9 +311,23 @@ router.post('/objects', verifyAutonomousToken, requireRoles(STORAGE_WRITER_ROLES
     const sha256 = crypto.createHash('sha256').update(buffer).digest('hex');
     const ownerUid = isConsumer ? user.uid : null;
 
-    const blobPath = resolveSafeBlobPath(tenantId, appId, objectId, ownerUid);
-    await fs.promises.mkdir(path.dirname(blobPath), { recursive: true });
-    await fs.promises.writeFile(blobPath, buffer);
+    let storageDriver: 'LOCAL_VOLUME' | 'SUPABASE_STORAGE' = 'LOCAL_VOLUME';
+    let storageBucket: string | undefined;
+    const preferredDriver = resolveActiveBlobStorageDriver();
+    if (preferredDriver === 'SUPABASE_STORAGE') {
+      try {
+        await putSupabaseBlob({ tenantId, appId, objectId, ownerUid }, buffer, mimeType);
+        storageDriver = 'SUPABASE_STORAGE';
+        storageBucket = resolveSupabaseStorageBucket();
+      } catch (sbErr: any) {
+        console.warn(`[Storage] Fallback para LOCAL_VOLUME após falha no Supabase Storage: ${sbErr?.message || sbErr}`);
+      }
+    }
+    if (storageDriver === 'LOCAL_VOLUME') {
+      const blobPath = resolveSafeBlobPath(tenantId, appId, objectId, ownerUid);
+      await fs.promises.mkdir(path.dirname(blobPath), { recursive: true });
+      await fs.promises.writeFile(blobPath, buffer);
+    }
 
     const nowIso = new Date().toISOString();
     const record = {
@@ -322,7 +343,8 @@ router.post('/objects', verifyAutonomousToken, requireRoles(STORAGE_WRITER_ROLES
       visibility,
       quotaScope: isConsumer ? 'USER_PERSONAL' : 'TENANT',
       ownerUid,
-      storageDriver: 'LOCAL_VOLUME',
+      storageDriver,
+      ...(storageBucket ? { storageBucket } : {}),
       uploadedByUid: user.uid,
       uploadedByRole: user.role,
       contentUrl: `/api/v1/storage/objects/${objectId}/content`,
@@ -409,6 +431,39 @@ router.get('/objects/:id/content', async (req, res) => {
       }
     }
 
+    const etag = `"${obj.sha256}"`;
+    res.setHeader('ETag', etag);
+    res.setHeader(
+      'Cache-Control',
+      obj.visibility === 'PUBLIC_READ' ? 'public, max-age=86400' : 'private, max-age=300'
+    );
+    if (req.headers['if-none-match'] === etag) {
+      return res.status(304).end();
+    }
+
+    const isSafeInlineImage = ['image/png', 'image/jpeg', 'image/webp'].includes(String(obj.mimeType || ''));
+    const contentDisposition = `${isSafeInlineImage ? 'inline' : 'attachment'}; filename="${sanitizeSegment(obj.filename, 'download.bin')}"`;
+
+    if (obj.storageDriver === 'SUPABASE_STORAGE') {
+      try {
+        const sbBuffer = await getSupabaseBlob({
+          tenantId: obj.tenantId,
+          appId: obj.appId,
+          objectId: id,
+          ownerUid: obj.ownerUid,
+        });
+        if (sbBuffer) {
+          res.setHeader('Content-Type', obj.mimeType || 'application/octet-stream');
+          res.setHeader('Content-Length', String(sbBuffer.length));
+          res.setHeader('X-Content-Type-Options', 'nosniff');
+          res.setHeader('Content-Disposition', contentDisposition);
+          return res.send(sbBuffer);
+        }
+      } catch (sbErr: any) {
+        console.warn(`[Storage] Falha ao ler blob ${id} do Supabase Storage: ${sbErr?.message || sbErr}`);
+      }
+    }
+
     const primaryBlobPath = resolveSafeBlobPath(obj.tenantId, obj.appId, id, obj.ownerUid);
     const fallbackBlobPath = obj.ownerUid ? resolveSafeBlobPath(obj.tenantId, obj.appId, id, null) : primaryBlobPath;
 
@@ -432,24 +487,10 @@ router.get('/objects/:id/content', async (req, res) => {
       return res.status(404).json({ error: 'Conteúdo físico do arquivo não localizado no volume de armazenamento.' });
     }
 
-    const etag = `"${obj.sha256}"`;
-    res.setHeader('ETag', etag);
-    res.setHeader(
-      'Cache-Control',
-      obj.visibility === 'PUBLIC_READ' ? 'public, max-age=86400' : 'private, max-age=300'
-    );
-    if (req.headers['if-none-match'] === etag) {
-      return res.status(304).end();
-    }
-
-    const isSafeInlineImage = ['image/png', 'image/jpeg', 'image/webp'].includes(String(obj.mimeType || ''));
     res.setHeader('Content-Type', obj.mimeType || 'application/octet-stream');
     res.setHeader('Content-Length', String(blobStat.size));
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader(
-      'Content-Disposition',
-      `${isSafeInlineImage ? 'inline' : 'attachment'}; filename="${sanitizeSegment(obj.filename, 'download.bin')}"`
-    );
+    res.setHeader('Content-Disposition', contentDisposition);
     const readStream = fs.createReadStream(blobPath);
     readStream.on('error', () => {
       if (!res.headersSent) {
@@ -483,6 +524,15 @@ router.delete('/objects/:id', verifyAutonomousToken, requireRoles(STORAGE_WRITER
       } else if (obj.tenantId !== user.tenantId || (obj.storeId && !hasUserStoreAccess(user, obj.storeId))) {
         return res.status(403).json({ error: 'Acesso negado: Arquivo pertence a outro tenant ou filial.' });
       }
+    }
+
+    if (obj.storageDriver === 'SUPABASE_STORAGE') {
+      await removeSupabaseBlob({
+        tenantId: obj.tenantId,
+        appId: obj.appId,
+        objectId: id,
+        ownerUid: obj.ownerUid,
+      }).catch(() => {});
     }
 
     const primaryBlobPath = resolveSafeBlobPath(obj.tenantId, obj.appId, id, obj.ownerUid);

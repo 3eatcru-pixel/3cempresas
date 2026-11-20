@@ -1,32 +1,58 @@
 import pkg from 'pg';
+import fs from 'fs';
 const { Pool } = pkg;
 import { PersistenceDriver, PersistenceDriverCapabilities, PERSISTENCE_DRIVERS_REGISTRY } from './PersistenceDriver.ts';
 import {
   PostgresConnectionTarget,
   PgRlsContext,
+  PgSslOption,
   normalizePgContext,
   resolvePostgresConnectionTargetWithSsl,
+  sanitizePgConnectionString,
+  hasSslDisabledInConnectionString,
 } from './postgresConnectionConfig.ts';
 import { createCloudHubTablesAndBaseIndexes } from './postgresSchemaTables.ts';
 import { buildStoreDocumentsQuerySql, StoreDocumentQueryFilter } from './postgresQueryHelpers.ts';
 
 export type { PostgresConnectionTarget, PgRlsContext };
 
-function resolvePgSslOption(
+/**
+ * Lê a CA raiz opcional (PEM) para validar o certificado TLS do PostgreSQL gerenciado
+ * (ex.: certificado raiz do Supabase baixado no Dashboard > Database > SSL).
+ * Prioridade: PG_SSL_CA (conteúdo PEM inline) > PG_SSL_CA_PATH (arquivo).
+ */
+export function resolvePgSslCa(env: Record<string, string | undefined> = process.env): string | undefined {
+  const inline = (env.PG_SSL_CA || '').trim();
+  if (inline) {
+    return inline.replace(/\\n/g, '\n');
+  }
+  const caPath = (env.PG_SSL_CA_PATH || '').trim();
+  if (caPath) {
+    try {
+      return fs.readFileSync(caPath, 'utf8');
+    } catch (err: any) {
+      console.warn(`[PostgresCloudDriver] PG_SSL_CA_PATH ilegível (${caPath}): ${err?.message || err}`);
+    }
+  }
+  return undefined;
+}
+
+export function resolvePgSslOption(
   hostOrUrl: string,
   env: Record<string, string | undefined> = process.env
-): boolean | { rejectUnauthorized: boolean } {
+): PgSslOption {
   const lower = hostOrUrl.toLowerCase();
   if (
     lower.includes('localhost') ||
     lower.includes('127.0.0.1') ||
-    lower.includes('sslmode=disable') ||
+    hasSslDisabledInConnectionString(lower) ||
     lower.includes('/cloudsql/')
   ) {
     return false;
   }
   const rejectUnauthorized = env.PG_SSL_REJECT_UNAUTHORIZED !== 'false';
-  return { rejectUnauthorized };
+  const ca = resolvePgSslCa(env);
+  return ca ? { rejectUnauthorized, ca } : { rejectUnauthorized };
 }
 
 export function resolvePostgresConnectionTarget(
@@ -50,7 +76,7 @@ export class PostgresCloudDriver implements PersistenceDriver {
     const poolBase =
       typeof connectionTarget === 'string'
         ? {
-            connectionString: connectionTarget,
+            connectionString: sanitizePgConnectionString(connectionTarget),
             ssl: resolvePgSslOption(connectionTarget, env),
           }
         : {
