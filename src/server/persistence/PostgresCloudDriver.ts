@@ -92,7 +92,7 @@ export class PostgresCloudDriver implements PersistenceDriver {
       ...poolBase,
       max: Number(env.PG_POOL_MAX) || 20,
       idleTimeoutMillis: 30_000,
-      connectionTimeoutMillis: 5_000,
+      connectionTimeoutMillis: Number(env.PG_CONNECTION_TIMEOUT_MS) || 12_000,
     });
   }
 
